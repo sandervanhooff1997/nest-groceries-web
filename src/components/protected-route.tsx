@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/src/lib/auth-context';
 import { useRouter } from 'next/navigation';
-import { useEffect, ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth();
@@ -10,7 +10,9 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.push('/login');
+      // Kicks the browser into Kinde's hosted login flow. On success Kinde
+      // redirects back to KINDE_POST_LOGIN_REDIRECT_URL.
+      router.replace('/api/auth/login');
     }
   }, [isLoading, isAuthenticated, router]);
 
@@ -31,4 +33,3 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
 
   return <>{children}</>;
 }
-

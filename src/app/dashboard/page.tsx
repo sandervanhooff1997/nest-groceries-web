@@ -1,59 +1,53 @@
 'use client';
 
-import { useAuth } from '@/src/lib/auth-context';
-import { ProtectedRoute } from '@/src/components/protected-route';
+import { LogoutLink } from '@kinde-oss/kinde-auth-nextjs/components';
 import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
+import { Copy, Loader2, LogOut, Plus, Trash2 } from 'lucide-react';
+import { ProtectedRoute } from '@/src/components/protected-route';
+import { useAuth } from '@/src/lib/auth-context';
+import { ShoppingListsService } from '@/src/api/generated';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
 
 interface ShoppingList {
   _id: string;
-  title: string;
+  title?: string;
+  name?: string;
   description?: string;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export default function DashboardPage() {
-  const { logout, token } = useAuth();
+  const { token } = useAuth();
   const router = useRouter();
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [newTitle, setNewTitle] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
   const [error, setError] = useState('');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
-
-  useEffect(() => {
-    fetchLists();
-  }, [token]);
-
-  const fetchLists = async () => {
+  const fetchLists = useCallback(async () => {
     if (!token) return;
-
     setIsLoading(true);
     setError('');
-
     try {
-      const response = await fetch(`${apiUrl}/shopping-lists`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch lists');
-      }
-
-      const data = await response.json();
-      setLists(Array.isArray(data) ? data : data.data || []);
+      const data = await ShoppingListsService.shoppingListsControllerFindAll();
+      const normalised: ShoppingList[] = Array.isArray(data)
+        ? (data as ShoppingList[])
+        : ((data as { data?: ShoppingList[] })?.data ?? []);
+      setLists(normalised);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch lists');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    void fetchLists();
+  }, [fetchLists]);
 
   const handleCreateList = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,23 +55,11 @@ export default function DashboardPage() {
 
     setIsCreating(true);
     setError('');
-
     try {
-      const response = await fetch(`${apiUrl}/shopping-lists`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ title: newTitle }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to create list');
-      }
-
-      const created = await response.json();
-      setLists([...lists, created]);
+      const created = (await ShoppingListsService.shoppingListsControllerCreate({
+        requestBody: { name: newTitle, items: [] },
+      })) as ShoppingList;
+      setLists((prev) => [...prev, created]);
       setNewTitle('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create list');
@@ -86,33 +68,67 @@ export default function DashboardPage() {
     }
   };
 
-  const handleLogout = () => {
-    logout();
-    router.push('/');
+  const handleDeleteList = async (e: React.MouseEvent, listId: string) => {
+    e.preventDefault();
+    if (!token || !confirm('Delete this shopping list? This cannot be undone.')) return;
+    setDeletingIds((prev) => new Set(prev).add(listId));
+    setError('');
+    try {
+      await ShoppingListsService.shoppingListsControllerDelete({ id: listId });
+      setLists((prev) => prev.filter((l) => l._id !== listId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete list');
+    } finally {
+      setDeletingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(listId);
+        return next;
+      });
+    }
+  };
+
+  const handleDuplicateList = async (e: React.MouseEvent, listId: string) => {
+    e.preventDefault();
+    if (!token) return;
+    setDuplicatingIds((prev) => new Set(prev).add(listId));
+    setError('');
+    try {
+      const duplicated = (await ShoppingListsService.shoppingListActionsControllerDuplicate({
+        id: listId,
+        requestBody: {},
+      })) as ShoppingList;
+      router.push(`/shopping-lists/${duplicated._id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to duplicate list');
+      setDuplicatingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(listId);
+        return next;
+      });
+    }
   };
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
         <header className="bg-white shadow sticky top-0 z-50">
           <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
             <div className="flex items-center gap-3">
               <span className="text-3xl">🛒</span>
               <h1 className="text-2xl font-bold text-gray-800">My Shopping Lists</h1>
             </div>
-            <button
-              onClick={handleLogout}
-              className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium"
+            <LogoutLink
+              postLogoutRedirectURL="/"
+              title="Log out"
+              aria-label="Log out"
+              className="rounded-lg p-2 text-red-600 hover:text-red-800 hover:bg-red-50 transition"
             >
-              Logout
-            </button>
+              <LogOut className="w-5 h-5" />
+            </LogoutLink>
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 py-8">
-          {/* Create New List Form */}
           <div className="bg-white rounded-xl shadow-md p-6 mb-8">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Create New List</h2>
             <form onSubmit={handleCreateList} className="flex gap-3">
@@ -126,26 +142,31 @@ export default function DashboardPage() {
               <button
                 type="submit"
                 disabled={isCreating || !newTitle.trim()}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
+                title="Create new shopping list"
+                aria-label="Create new shopping list"
+                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex items-center gap-2"
               >
-                {isCreating ? 'Creating...' : 'Create'}
+                {isCreating ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
+                {isCreating ? 'Creating…' : 'Create'}
               </button>
             </form>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}
             </div>
           )}
 
-          {/* Lists Grid */}
           {isLoading ? (
             <div className="flex justify-center py-12">
               <div className="text-center">
-                <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-                <p className="text-gray-600">Loading your lists...</p>
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+                <p className="text-gray-600">Loading your lists…</p>
               </div>
             </div>
           ) : lists.length === 0 ? (
@@ -157,28 +178,61 @@ export default function DashboardPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {lists.map((list) => (
-                <Link
+                <div
                   key={list._id}
-                  href={`/shopping-lists/${list._id}`}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden group cursor-pointer"
+                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
                 >
-                  <div className="p-6 group-hover:bg-blue-50 transition">
+                  <Link
+                    href={`/shopping-lists/${list._id}`}
+                    className="flex-1 p-6 hover:bg-blue-50 transition group block"
+                  >
                     <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-blue-600 transition">
-                      {list.title}
+                      {list.title ?? list.name ?? 'Untitled'}
                     </h3>
                     {list.description && (
                       <p className="text-gray-600 text-sm mb-4 line-clamp-2">{list.description}</p>
                     )}
-                    <p className="text-xs text-gray-400">
-                      Created {new Date(list.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="px-6 py-3 bg-gray-50 group-hover:bg-blue-100 transition">
-                    <span className="text-blue-600 font-semibold group-hover:text-blue-700 transition">
+                    {list.createdAt && (
+                      <p className="text-xs text-gray-400">
+                        Created {new Date(list.createdAt).toLocaleDateString()}
+                      </p>
+                    )}
+                  </Link>
+                  <div className="px-4 py-2 bg-gray-50 flex items-center gap-1">
+                    <Link
+                      href={`/shopping-lists/${list._id}`}
+                      className="flex-1 text-blue-600 font-semibold hover:text-blue-700 transition text-sm"
+                    >
                       View Items →
-                    </span>
+                    </Link>
+                    <button
+                      onClick={(e) => void handleDuplicateList(e, list._id)}
+                      disabled={duplicatingIds.has(list._id) || deletingIds.has(list._id)}
+                      title="Duplicate this list"
+                      aria-label="Duplicate this list"
+                      className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {duplicatingIds.has(list._id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </button>
+                    <button
+                      onClick={(e) => void handleDeleteList(e, list._id)}
+                      disabled={deletingIds.has(list._id) || duplicatingIds.has(list._id)}
+                      title="Delete this list permanently"
+                      aria-label="Delete this list permanently"
+                      className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {deletingIds.has(list._id) ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4" />
+                      )}
+                    </button>
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -187,4 +241,3 @@ export default function DashboardPage() {
     </ProtectedRoute>
   );
 }
-

@@ -1,5 +1,7 @@
 'use client';
 
+import { LoginLink, RegisterLink } from '@kinde-oss/kinde-auth-nextjs/components';
+
 export default function HomePage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-800">
@@ -10,18 +12,18 @@ export default function HomePage() {
         </div>
 
         <div className="flex gap-4 justify-center mt-8">
-          <a
-            href="/login"
+          <LoginLink
+            postLoginRedirectURL="/dashboard"
             className="px-8 py-3 bg-white text-blue-600 font-semibold rounded-lg hover:bg-blue-50 transition shadow-lg"
           >
             Sign In
-          </a>
-          <a
-            href="/register"
+          </LoginLink>
+          <RegisterLink
+            postLoginRedirectURL="/dashboard"
             className="px-8 py-3 bg-blue-500 text-white font-semibold rounded-lg hover:bg-blue-400 transition shadow-lg border-2 border-white"
           >
             Create Account
-          </a>
+          </RegisterLink>
         </div>
 
         <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
@@ -45,4 +47,3 @@ export default function HomePage() {
     </div>
   );
 }
-

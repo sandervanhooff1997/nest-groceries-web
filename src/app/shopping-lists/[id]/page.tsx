@@ -1,327 +1,500 @@
 'use client';
 
-import { useAuth } from '@/src/lib/auth-context';
-import { ProtectedRoute } from '@/src/components/protected-route';
+import { use, useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import {
+  ArrowLeft,
+  Check,
+  Copy,
+  Loader2,
+  Pencil,
+  Plus,
+  ShoppingCart,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useAuth } from '@/src/lib/auth-context';
+import { ShoppingListsService } from '@/src/api/generated';
+import { GroceryItemDto } from '@/src/api/generated/models/GroceryItemDto';
+import { ProtectedRoute } from '@/src/components/protected-route';
 
 interface GroceryItem {
   _id: string;
   name: string;
   quantity?: number;
   unit?: string;
-  isCompleted?: boolean;
-  notes?: string;
+  purchased?: boolean;
 }
 
 interface ShoppingList {
   _id: string;
-  title: string;
-  description?: string;
+  name?: string;
+  items?: GroceryItem[];
 }
 
-export default async function ShoppingListDetailPage({
+const UNIT_OPTIONS: { value: GroceryItemDto.unit; label: string }[] = [
+  { value: GroceryItemDto.unit.PIECE_S_, label: 'Piece(s)' },
+  { value: GroceryItemDto.unit.GRAM, label: 'Gram' },
+  { value: GroceryItemDto.unit.KILOGRAM, label: 'Kilogram' },
+  { value: GroceryItemDto.unit.LITER, label: 'Liter' },
+  { value: GroceryItemDto.unit.MILLILITER, label: 'Milliliter' },
+];
+
+function IconBtn({
+  onClick,
+  disabled,
+  title,
+  children,
+  variant = 'default',
+  type = 'button',
+}: {
+  onClick?: () => void;
+  disabled?: boolean;
+  title: string;
+  children: React.ReactNode;
+  variant?: 'default' | 'danger' | 'primary' | 'success';
+  type?: 'button' | 'submit';
+}) {
+  const colours = {
+    default: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
+    danger: 'text-red-500 hover:text-red-700 hover:bg-red-50',
+    primary: 'text-blue-600 hover:text-blue-800 hover:bg-blue-50',
+    success: 'text-green-600 hover:text-green-800 hover:bg-green-50',
+  };
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      aria-label={title}
+      className={`rounded-lg p-2 transition disabled:opacity-40 disabled:cursor-not-allowed ${colours[variant]}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+export default function ShoppingListDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = await params;
-  const { token, logout } = useAuth();
+  const { id: listId } = use(params);
+  const { token } = useAuth();
   const router = useRouter();
+
   const [list, setList] = useState<ShoppingList | null>(null);
-  const [items, setItems] = useState<GroceryItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newItemName, setNewItemName] = useState('');
-  const [newItemQuantity, setNewItemQuantity] = useState('1');
-  const [newItemUnit, setNewItemUnit] = useState('pcs');
-  const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState('');
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3000/api';
-  const listId = id;
+  // Add item form
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemQuantity, setNewItemQuantity] = useState('1');
+  const [newItemUnit, setNewItemUnit] = useState<GroceryItemDto.unit>(GroceryItemDto.unit.PIECE_S_);
+  const [isAddingItem, setIsAddingItem] = useState(false);
 
-  useEffect(() => {
-    if (token) {
-      fetchListDetails();
-      fetchItems();
-    }
-  }, [token, listId]);
+  // Edit list name
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editedName, setEditedName] = useState('');
+  const [isSavingName, setIsSavingName] = useState(false);
 
-  const fetchListDetails = async () => {
+  // Delete / duplicate list
+  const [isDeletingList, setIsDeletingList] = useState(false);
+  const [isDuplicating, setIsDuplicating] = useState(false);
+
+  // Per-item loading states
+  const [togglingItems, setTogglingItems] = useState<Set<string>>(new Set());
+  const [removingItems, setRemovingItems] = useState<Set<string>>(new Set());
+
+  const loadList = useCallback(async () => {
     if (!token) return;
-
+    setIsLoading(true);
+    setError('');
     try {
-      const response = await fetch(`${apiUrl}/shopping-lists/${listId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch list');
-      const data = await response.json();
+      const data = (await ShoppingListsService.shoppingListsControllerFindById({
+        id: listId,
+      })) as ShoppingList;
       setList(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch list');
-    }
-  };
-
-  const fetchItems = async () => {
-    if (!token) return;
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      const response = await fetch(`${apiUrl}/shopping-lists/${listId}/items`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) throw new Error('Failed to fetch items');
-      const data = await response.json();
-      setItems(Array.isArray(data) ? data : data.data || []);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch items');
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [listId, token]);
+
+  useEffect(() => {
+    void loadList();
+  }, [loadList]);
 
   const handleAddItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItemName.trim() || !token) return;
-
-    setIsCreating(true);
+    setIsAddingItem(true);
     setError('');
-
     try {
-      const response = await fetch(`${apiUrl}/shopping-lists/${listId}/items`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: newItemName,
-          quantity: parseInt(newItemQuantity) || 1,
-          unit: newItemUnit,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to add item');
-      const created = await response.json();
-      setItems([...items, created]);
+      const quantity = Math.max(1, parseInt(newItemQuantity, 10) || 1);
+      const updated = (await ShoppingListsService.groceryItemsControllerAddItem({
+        id: listId,
+        requestBody: { name: newItemName.trim(), quantity, unit: newItemUnit },
+      })) as ShoppingList;
+      setList(updated);
       setNewItemName('');
       setNewItemQuantity('1');
+      setNewItemUnit(GroceryItemDto.unit.PIECE_S_);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add item');
     } finally {
-      setIsCreating(false);
+      setIsAddingItem(false);
     }
   };
 
-  const handleToggleItem = async (itemId: string, currentStatus: boolean) => {
+  const handleToggleItem = async (itemId: string, currentlyPurchased: boolean) => {
     if (!token) return;
-
+    setTogglingItems((prev) => new Set(prev).add(itemId));
+    setList((prev) =>
+      prev
+        ? {
+            ...prev,
+            items: prev.items?.map((item) =>
+              item._id === itemId ? { ...item, purchased: !currentlyPurchased } : item
+            ),
+          }
+        : prev
+    );
     try {
-      const response = await fetch(`${apiUrl}/shopping-lists/${listId}/items/${itemId}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          isCompleted: !currentStatus,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Failed to update item');
-      const updated = await response.json();
-      setItems(items.map((item) => (item._id === itemId ? updated : item)));
+      const updated = (
+        currentlyPurchased
+          ? await ShoppingListsService.groceryItemActionsControllerUncompleteItem({ id: listId, itemId })
+          : await ShoppingListsService.groceryItemActionsControllerCompleteItem({ id: listId, itemId })
+      ) as ShoppingList;
+      setList(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to update item');
-    }
-  };
-
-  const handleDeleteItem = async (itemId: string) => {
-    if (!token) return;
-
-    try {
-      const response = await fetch(`${apiUrl}/shopping-lists/${listId}/items/${itemId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      void loadList();
+    } finally {
+      setTogglingItems((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
       });
-
-      if (!response.ok) throw new Error('Failed to delete item');
-      setItems(items.filter((item) => item._id !== itemId));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete item');
     }
   };
 
-  const completedCount = items.filter((item) => item.isCompleted).length;
-  const completionPercent = items.length > 0 ? Math.round((completedCount / items.length) * 100) : 0;
+  const handleRemoveItem = async (itemId: string) => {
+    if (!token) return;
+    setRemovingItems((prev) => new Set(prev).add(itemId));
+    setError('');
+    try {
+      const updated = (await ShoppingListsService.groceryItemsControllerRemoveItem({
+        id: listId,
+        itemId,
+      })) as ShoppingList;
+      setList(updated);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to remove item');
+    } finally {
+      setRemovingItems((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  };
+
+  const handleSaveName = async () => {
+    if (!editedName.trim() || !token) return;
+    setIsSavingName(true);
+    setError('');
+    try {
+      const updated = (await ShoppingListsService.shoppingListsControllerUpdate({
+        id: listId,
+        requestBody: { name: editedName.trim() },
+      })) as ShoppingList;
+      setList(updated);
+      setIsEditingName(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to update list name');
+    } finally {
+      setIsSavingName(false);
+    }
+  };
+
+  const handleDeleteList = async () => {
+    if (!token || !confirm('Delete this shopping list? This cannot be undone.')) return;
+    setIsDeletingList(true);
+    setError('');
+    try {
+      await ShoppingListsService.shoppingListsControllerDelete({ id: listId });
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete list');
+      setIsDeletingList(false);
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!token) return;
+    setIsDuplicating(true);
+    setError('');
+    try {
+      const duplicated = (await ShoppingListsService.shoppingListActionsControllerDuplicate({
+        id: listId,
+        requestBody: {},
+      })) as ShoppingList;
+      router.push(`/shopping-lists/${duplicated._id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to duplicate list');
+      setIsDuplicating(false);
+    }
+  };
+
+  const items = list?.items ?? [];
+  const purchasedCount = items.filter((i) => i.purchased).length;
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
-        {/* Header */}
+        {/* ── Header ── */}
         <header className="bg-white shadow sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4">
-            <div className="flex justify-between items-center mb-4">
-              <Link href="/dashboard" className="text-blue-600 hover:text-blue-800 flex items-center gap-2">
-                ← Back to Lists
-              </Link>
-              <button
-                onClick={() => {
-                  logout();
-                  router.push('/');
-                }}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium"
-              >
-                Logout
-              </button>
+          <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
+            <Link
+              href="/dashboard"
+              title="Back to all lists"
+              aria-label="Back to all lists"
+              className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
+            >
+              <ArrowLeft className="w-5 h-5" />
+            </Link>
+
+            <div className="flex-1 min-w-0">
+              {isEditingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    autoFocus
+                    value={editedName}
+                    onChange={(e) => setEditedName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') void handleSaveName();
+                      if (e.key === 'Escape') setIsEditingName(false);
+                    }}
+                    className="flex-1 px-3 py-1 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg font-bold text-gray-800"
+                  />
+                  <IconBtn
+                    onClick={() => void handleSaveName()}
+                    disabled={isSavingName || !editedName.trim()}
+                    title="Save new name"
+                    variant="primary"
+                  >
+                    {isSavingName ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Check className="w-4 h-4" />
+                    )}
+                  </IconBtn>
+                  <IconBtn
+                    onClick={() => setIsEditingName(false)}
+                    title="Cancel rename"
+                    variant="default"
+                  >
+                    <X className="w-4 h-4" />
+                  </IconBtn>
+                </div>
+              ) : (
+                <h1 className="text-xl font-bold text-gray-800 truncate">
+                  {list?.name ?? 'Shopping List'}
+                </h1>
+              )}
             </div>
-            {list && (
-              <div>
-                <h1 className="text-3xl font-bold text-gray-800">{list.title}</h1>
-                {list.description && <p className="text-gray-600 mt-1">{list.description}</p>}
+
+            {!isEditingName && (
+              <div className="flex items-center shrink-0">
+                <IconBtn
+                  onClick={() => {
+                    setEditedName(list?.name ?? '');
+                    setIsEditingName(true);
+                  }}
+                  title="Rename this list"
+                  variant="default"
+                >
+                  <Pencil className="w-4 h-4" />
+                </IconBtn>
+                <IconBtn
+                  onClick={() => void handleDuplicate()}
+                  disabled={isDuplicating}
+                  title="Duplicate this list"
+                  variant="default"
+                >
+                  {isDuplicating ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Copy className="w-4 h-4" />
+                  )}
+                </IconBtn>
+                <IconBtn
+                  onClick={() => void handleDeleteList()}
+                  disabled={isDeletingList}
+                  title="Delete this list permanently"
+                  variant="danger"
+                >
+                  {isDeletingList ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Trash2 className="w-4 h-4" />
+                  )}
+                </IconBtn>
               </div>
             )}
           </div>
         </header>
 
-        {/* Main Content */}
-        <main className="max-w-4xl mx-auto px-4 py-8">
-          {/* Progress Bar */}
-          {items.length > 0 && (
-            <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-              <div className="flex justify-between items-center mb-3">
-                <span className="text-sm font-semibold text-gray-700">Progress</span>
-                <span className="text-lg font-bold text-blue-600">
-                  {completedCount}/{items.length}
-                </span>
-              </div>
-              <div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-blue-600 transition-all duration-300"
-                  style={{ width: `${completionPercent}%` }}
-                ></div>
-              </div>
-              <p className="text-xs text-gray-500 mt-2">{completionPercent}% complete</p>
-            </div>
-          )}
-
-          {/* Add Item Form */}
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Add New Item</h2>
-            <form onSubmit={handleAddItem} className="grid grid-cols-1 md:grid-cols-5 gap-3">
-              <input
-                type="text"
-                placeholder="Item name..."
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                className="md:col-span-2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="number"
-                placeholder="Qty"
-                value={newItemQuantity}
-                onChange={(e) => setNewItemQuantity(e.target.value)}
-                min="1"
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <select
-                value={newItemUnit}
-                onChange={(e) => setNewItemUnit(e.target.value)}
-                className="px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="pcs">pcs</option>
-                <option value="kg">kg</option>
-                <option value="g">g</option>
-                <option value="L">L</option>
-                <option value="ml">ml</option>
-              </select>
-              <button
-                type="submit"
-                disabled={isCreating || !newItemName.trim()}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition"
-              >
-                {isCreating ? 'Adding...' : 'Add'}
-              </button>
-            </form>
-          </div>
-
-          {/* Error Message */}
+        <main className="max-w-3xl mx-auto px-4 py-8 space-y-6">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
+            <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-start gap-2">
+              <X className="w-4 h-4 mt-0.5 shrink-0" />
               {error}
             </div>
           )}
 
-          {/* Items List */}
-          {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="text-center">
-                <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-                <p className="text-gray-600">Loading items...</p>
-              </div>
-            </div>
-          ) : items.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl shadow-md">
-              <div className="text-5xl mb-4">🛍️</div>
-              <p className="text-gray-600 text-lg mb-4">No items yet</p>
-              <p className="text-gray-500">Add items above to start shopping</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {items.map((item) => (
-                <div
-                  key={item._id}
-                  className={`bg-white rounded-lg shadow-sm hover:shadow-md transition p-4 flex items-center justify-between ${
-                    item.isCompleted ? 'opacity-60' : ''
-                  }`}
+          {/* ── Add item form ── */}
+          <div className="bg-white rounded-xl shadow-md p-6">
+            <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <ShoppingCart className="w-5 h-5 text-blue-600" />
+              Add Item
+            </h2>
+            <form onSubmit={(e) => void handleAddItem(e)} className="space-y-3">
+              <input
+                type="text"
+                placeholder="Item name…"
+                value={newItemName}
+                onChange={(e) => setNewItemName(e.target.value)}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              />
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  min={1}
+                  placeholder="Qty"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  title="Quantity"
+                  aria-label="Quantity"
+                  className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <select
+                  value={newItemUnit}
+                  onChange={(e) => setNewItemUnit(e.target.value as GroceryItemDto.unit)}
+                  title="Unit of measurement"
+                  aria-label="Unit of measurement"
+                  className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
-                  <div className="flex items-center gap-4 flex-1">
-                    <input
-                      type="checkbox"
-                      checked={item.isCompleted || false}
-                      onChange={() => handleToggleItem(item._id, item.isCompleted || false)}
-                      className="w-5 h-5 text-blue-600 rounded cursor-pointer"
-                    />
-                    <div className="flex-1">
-                      <p
-                        className={`font-medium ${
-                          item.isCompleted ? 'line-through text-gray-400' : 'text-gray-800'
+                  {UNIT_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="submit"
+                  disabled={isAddingItem || !newItemName.trim()}
+                  title="Add item to list"
+                  aria-label="Add item to list"
+                  className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition flex items-center gap-2"
+                >
+                  {isAddingItem ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Plus className="w-4 h-4" />
+                  )}
+                  <span className="font-semibold">{isAddingItem ? 'Adding…' : 'Add'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* ── Items list ── */}
+          <div className="bg-white rounded-xl shadow-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+              {items.length > 0 && (
+                <span className="text-sm text-gray-500">
+                  {purchasedCount}/{items.length} purchased
+                </span>
+              )}
+            </div>
+
+            {isLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
+              </div>
+            ) : items.length === 0 ? (
+              <div className="py-10 text-center text-gray-500">No items yet. Add one above!</div>
+            ) : (
+              <ul className="divide-y divide-gray-100">
+                {items.map((item) => {
+                  const isToggling = togglingItems.has(item._id);
+                  const isRemoving = removingItems.has(item._id);
+                  return (
+                    <li
+                      key={item._id}
+                      className={`flex items-center gap-3 px-6 py-4 transition ${item.purchased ? 'bg-gray-50' : ''}`}
+                    >
+                      {/* Toggle purchased */}
+                      <button
+                        onClick={() => void handleToggleItem(item._id, item.purchased ?? false)}
+                        disabled={isToggling || isRemoving}
+                        title={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
+                        aria-label={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
+                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition disabled:opacity-40 ${
+                          item.purchased
+                            ? 'bg-green-500 border-green-500 text-white'
+                            : 'border-gray-300 hover:border-green-400'
                         }`}
                       >
-                        {item.name}
-                      </p>
-                      {item.notes && <p className="text-sm text-gray-500 mt-1">{item.notes}</p>}
-                    </div>
-                    {item.quantity && (
-                      <span className="text-sm font-semibold text-gray-600 bg-gray-100 px-3 py-1 rounded">
-                        {item.quantity} {item.unit || 'pcs'}
-                      </span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleDeleteItem(item._id)}
-                    className="ml-4 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition text-sm font-medium"
-                  >
-                    Delete
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
+                        {isToggling ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : item.purchased ? (
+                          <Check className="w-3 h-3" />
+                        ) : null}
+                      </button>
+
+                      {/* Item info */}
+                      <div className="flex-1 min-w-0">
+                        <span
+                          className={`font-medium ${item.purchased ? 'line-through text-gray-400' : 'text-gray-800'}`}
+                        >
+                          {item.name}
+                        </span>
+                        {(item.quantity != null || item.unit) && (
+                          <span className="ml-2 text-sm text-gray-500">
+                            {[item.quantity, item.unit].filter(Boolean).join('\u202f')}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Remove item */}
+                      <IconBtn
+                        onClick={() => void handleRemoveItem(item._id)}
+                        disabled={isRemoving || isToggling}
+                        title="Remove item from list"
+                        variant="danger"
+                      >
+                        {isRemoving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-4 h-4" />
+                        )}
+                      </IconBtn>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </main>
       </div>
     </ProtectedRoute>
   );
 }
-
