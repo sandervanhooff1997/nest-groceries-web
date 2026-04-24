@@ -52,6 +52,7 @@ interface GroceryItem {
   unit?: string;
   purchased?: boolean;
   order: number;
+  category?: string;
 }
 
 interface SharedUser {
@@ -77,6 +78,34 @@ const UNIT_OPTIONS: { value: GroceryItemDto.unit; label: string }[] = [
   { value: GroceryItemDto.unit.MILLILITER, label: 'Milliliter' },
 ];
 
+const CATEGORY_LABELS: Record<string, string> = {
+  fruits_vegetables: 'Fruit & Groente',
+  bread: 'Brood',
+  meat_deli: 'Vlees & Deli',
+  cheese: 'Kaas',
+  dairy: 'Zuivel',
+  pasta_rice_sauces: 'Pasta, Rijst & Sauzen',
+  breakfast_snacks: 'Ontbijt & Snacks',
+  nonfood_promotions: 'Huishouden & Promoties',
+  beverages: 'Dranken',
+  frozen_foods: 'Diepvries',
+  checkout: 'Kassa',
+};
+
+const CATEGORY_ORDER: Record<string, number> = {
+  fruits_vegetables: 0,
+  bread: 1,
+  meat_deli: 2,
+  cheese: 3,
+  dairy: 4,
+  pasta_rice_sauces: 5,
+  breakfast_snacks: 6,
+  nonfood_promotions: 7,
+  beverages: 8,
+  frozen_foods: 9,
+  checkout: 10,
+};
+
 function IconBtn({
   onClick,
   disabled,
@@ -99,16 +128,20 @@ function IconBtn({
     success: 'text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900',
   };
   return (
-    <button
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      title={title}
-      aria-label={title}
-      className={`rounded-lg p-2 transition disabled:opacity-40 disabled:cursor-not-allowed ${colours[variant]}`}
-    >
-      {children}
-    </button>
+    <div className="relative group/iconbtn inline-block">
+      <button
+        type={type}
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={title}
+        className={`rounded-lg p-2 transition disabled:opacity-40 disabled:cursor-not-allowed hover:scale-110 ${colours[variant]}`}
+      >
+        {children}
+      </button>
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/iconbtn:opacity-100 transition-opacity shadow-lg z-50">
+        {title}
+      </span>
+    </div>
   );
 }
 
@@ -538,7 +571,12 @@ export default function ShoppingListDetailPage({
     });
   };
 
-  const sortedItems = [...(list?.items ?? [])].sort((a, b) => a.order - b.order);
+  const sortedItems = [...(list?.items ?? [])].sort((a, b) => {
+    const aCatOrder = a.category ? (CATEGORY_ORDER[a.category] ?? 999) : 999;
+    const bCatOrder = b.category ? (CATEGORY_ORDER[b.category] ?? 999) : 999;
+    if (aCatOrder !== bCatOrder) return aCatOrder - bCatOrder;
+    return a.order - b.order;
+  });
   const purchasedCount = sortedItems.filter((i) => i.purchased).length;
   const activeItem = activeId ? sortedItems.find((i) => i._id === activeId) : null;
 

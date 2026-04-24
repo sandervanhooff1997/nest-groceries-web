@@ -146,12 +146,27 @@ export default function DashboardPage() {
     setIsCreating(true);
     setError('');
     try {
+      let items: GroceryItem[] = [];
+      let fromTemplateIds: string[] | undefined;
+
+      // If templates are selected, merge items from all of them
+      if (opts.fromTemplateIds && opts.fromTemplateIds.length > 0) {
+        fromTemplateIds = opts.fromTemplateIds;
+        const selectedTemplates = lists.filter(l => opts.fromTemplateIds?.includes(l._id));
+        selectedTemplates.forEach(template => {
+          if (template.items) {
+            // Strip _id and order fields from items as API doesn't accept them
+            items = [...items, ...template.items.map(({ _id, order, ...item }) => item)];
+          }
+        });
+      }
+
       const created = (await ShoppingListsService.shoppingListsControllerCreate({
         requestBody: {
           name: opts.isTemplate && opts.name ? opts.name : generateListName(),
-          items: [],
+          items,
           isTemplate: opts.isTemplate,
-          fromTemplateId: opts.fromTemplateIds && opts.fromTemplateIds.length > 0 ? opts.fromTemplateIds[0] : undefined,
+          fromTemplateIds,
         },
       })) as ShoppingList;
       setShowCreateModal(false);
@@ -298,7 +313,7 @@ export default function DashboardPage() {
               >
                 {theme === 'dark' ? '🌙' : '☀️'}
               </button>
-              <div className="relative group">
+              <div className="relative group/create">
                 <button
                   onClick={() => setShowCreateModal(true)}
                   disabled={isCreating}
@@ -314,7 +329,7 @@ export default function DashboardPage() {
                     </>
                   )}
                 </button>
-                <span className="pointer-events-none absolute right-0 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-3 py-2 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity no-underline shadow-lg">
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-3 py-2 text-xs text-white opacity-0 group-hover/create:opacity-100 transition-opacity no-underline shadow-lg z-50">
                   Create a new shopping list
                 </span>
               </div>

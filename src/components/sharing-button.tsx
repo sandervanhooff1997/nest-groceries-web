@@ -91,7 +91,7 @@ export function SharingButton({
           </span>
         )}
       </button>
-      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/share:opacity-100 transition-opacity shadow-lg z-50 no-underline">
+      <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/share:opacity-100 transition-opacity shadow-lg z-50 no-underline">
         {tooltipText}
       </span>
 
