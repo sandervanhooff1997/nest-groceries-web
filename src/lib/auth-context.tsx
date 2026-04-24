@@ -20,7 +20,10 @@ OpenAPI.WITH_CREDENTIALS = false;
 OpenAPI.TOKEN = async () => currentAccessToken ?? '';
 
 type AuthState = {
-  user: KindeUser<Record<string, string>> | null;
+  user: (KindeUser<Record<string, string>> & {
+    given_name?: string;
+    family_name?: string;
+  }) | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   token: string | null;

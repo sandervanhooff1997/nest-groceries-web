@@ -9,3 +9,7 @@ export default withAuth;
 export const config = {
   matcher: ['/dashboard/:path*', '/shopping-lists/:path*'],
 };
+
+export const kindeMiddlewareConfig = {
+  scope: 'openid profile email given_name family_name',
+};

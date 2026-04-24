@@ -3,7 +3,7 @@
 import { LogoutLink } from '@kinde-oss/kinde-auth-nextjs/components';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { Check, Copy, Eye, Loader2, LogOut, Plus, Trash2 } from 'lucide-react';
+import { Check, Copy, Eye, Loader2, LogOut, Plus, Trash2, Sparkles } from 'lucide-react';
 import { useRef } from 'react';
 import { ProtectedRoute } from '@/src/components/protected-route';
 import { CreateListModal } from '@/src/components/create-list-modal';
@@ -209,50 +209,114 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50">
-        <header className="bg-white shadow sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col xs:flex-row gap-2 xs:gap-0 xs:flex-nowrap justify-between items-center">
+      <style>{`
+        @keyframes fadeInDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        @keyframes slideInLeft {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        @keyframes pulse-soft {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.8;
+          }
+        }
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+        .animate-in-down {
+          animation: fadeInDown 0.6s ease-out;
+        }
+        .animate-in-up {
+          animation: fadeInUp 0.6s ease-out;
+        }
+        .animate-in-left {
+          animation: slideInLeft 0.6s ease-out;
+        }
+        .card-hover {
+          transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .card-hover:hover {
+          transform: translateY(-8px);
+        }
+      `}</style>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
+        <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/30 dark:border-gray-800/30 shadow-sm animate-in-down">
+          <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col xs:flex-row gap-3 xs:gap-0 xs:flex-nowrap justify-between items-center">
             <div className="flex items-center gap-4 flex-1 w-full xs:w-auto justify-start">
               {user?.email && (
-                <span className="text-sm text-gray-700 font-medium">Welcome, {user.email}</span>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">Welcome back!</span>
+                  <span className="text-xs text-gray-600 dark:text-gray-400">{user.email}</span>
+                </div>
               )}
             </div>
-            <div className="flex items-center gap-1 w-full xs:w-auto justify-end flex-wrap">
+            <div className="flex items-center gap-2 w-full xs:w-auto justify-end flex-wrap">
               <button
-                onClick={() => {
-                  // Find the theme toggle button in the DOM and click it
-                  const btn = document.querySelector('[aria-label="Toggle dark mode"]');
-                  if (btn) (btn as HTMLButtonElement).click();
-                }}
-                className="rounded-lg p-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                onClick={toggleTheme}
+                className={`rounded-lg p-2.5 backdrop-blur-sm transition-all duration-300 ${theme === 'dark' ? 'bg-yellow-400/10 text-yellow-500 hover:bg-yellow-400/20 hover:scale-110' : 'bg-blue-400/10 text-blue-600 hover:bg-blue-400/20 hover:scale-110'}`}
                 aria-label="Toggle dark mode"
                 type="button"
               >
-                {typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? '🌙' : '☀️'}
+                {theme === 'dark' ? '🌙' : '☀️'}
               </button>
               <div className="relative group">
                 <button
                   onClick={() => setShowCreateModal(true)}
                   disabled={isCreating}
                   aria-label="Create new shopping list"
-                  className="rounded-lg p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                  className="rounded-xl p-2.5 bg-gradient-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-600 text-white hover:shadow-lg hover:shadow-blue-500/50 dark:hover:shadow-blue-400/50 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
                 >
                   {isCreating ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
                   ) : (
-                    <Plus className="w-5 h-5" />
+                    <>
+                      <Plus className="w-5 h-5" />
+                      <span className="hidden sm:inline text-sm font-medium">New List</span>
+                    </>
                   )}
                 </button>
-                <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity no-underline">
-                  New list
+                <span className="pointer-events-none absolute right-0 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-3 py-2 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity no-underline shadow-lg">
+                  Create a new shopping list
                 </span>
               </div>
-              <div className="w-px h-6 bg-gray-200 mx-1" />
               <LogoutLink
                 postLogoutRedirectURL="/"
                 title="Log out"
                 aria-label="Log out"
-                className="rounded-lg p-2 text-red-600 hover:text-red-800 hover:bg-red-50 transition"
+                className="rounded-lg p-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:scale-110 transition-all duration-300"
               >
                 <LogOut className="w-5 h-5" />
               </LogoutLink>
@@ -260,68 +324,96 @@ export default function DashboardPage() {
           </div>
         </header>
 
-        <main className="max-w-7xl mx-auto px-4 py-8">
+        <main className="max-w-7xl mx-auto px-4 py-12">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
-              {error}
+            <div className="mb-6 p-5 bg-gradient-to-r from-red-50/80 to-red-100/40 dark:from-red-950/40 dark:to-red-900/20 border border-red-300/50 dark:border-red-800/50 text-red-700 dark:text-red-300 rounded-xl shadow-sm animate-in-down font-medium">
+              ⚠️ {error}
             </div>
           )}
 
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <div className="text-center">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
-                <p className="text-gray-600">Loading your lists…</p>
+            <div className="flex justify-center py-20">
+              <div className="text-center space-y-6 animate-in-up">
+                <div className="flex justify-center">
+                  <div className="relative w-16 h-16">
+                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-blue-400 rounded-full opacity-20 animate-pulse"></div>
+                    <Loader2 className="w-16 h-16 text-blue-600 dark:text-blue-400 animate-spin absolute inset-0" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">Loading your lists…</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This usually takes just a moment</p>
+                </div>
               </div>
             </div>
           ) : lists.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-xl shadow-md">
-              <div className="text-5xl mb-4">📭</div>
-              <p className="text-gray-600 text-lg mb-4">No shopping lists yet</p>
-              <p className="text-gray-500">Create one above to get started!</p>
+            <div className="text-center py-20 bg-gradient-to-br from-white/80 to-blue-50/50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm animate-in-up space-y-6">
+              <div className="text-7xl animate-bounce" style={{ animationDuration: '2s' }}>📭</div>
+              <div>
+                <p className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent mb-2">No shopping lists yet</p>
+                <p className="text-gray-600 dark:text-gray-400">Create one above to get started and organize your shopping!</p>
+              </div>
             </div>
           ) : (
             <>
               {/* Normal Shopping Lists */}
-              <div className="mb-10">
-                <h2 className="text-lg font-bold text-gray-700 mb-3">My Shopping Lists</h2>
+              <div className="mb-14 animate-in-up" style={{ animationDelay: '0.1s' }}>
+                <div className="flex items-center gap-3 mb-6">
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">My Shopping Lists</h2>
+                  <div className="h-1 flex-1 bg-gradient-to-r from-blue-400 to-transparent rounded-full"></div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {lists.filter((list) => !list.isTemplate).length === 0 ? (
-                    <div className="col-span-full text-gray-500 text-center py-8 bg-white rounded-xl shadow-md">No shopping lists found</div>
+                    <div className="col-span-full text-gray-500 dark:text-gray-400 text-center py-12 bg-gradient-to-br from-white/50 to-blue-50/50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">No shopping lists found</div>
                   ) : (
-                    lists.filter((list) => !list.isTemplate).map((list) => {
+                    lists.filter((list) => !list.isTemplate).map((list, idx) => {
                       const role = getListRole(list, { userId: user?.id, email: user?.email });
                       const permissions = getListPermissions(role);
                       const roleLabel = getRoleLabel(role);
                       const showRoleBadge = role === 'co-owner' || role === 'participant';
+                      const isCompleted = list.items && list.items.length > 0 && list.items.every((i) => i.purchased);
                       return (
                         <div
                           key={list._id}
-                          className={`rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col ${list.items && list.items.length > 0 && list.items.every((i) => i.purchased) ? 'bg-gray-100 opacity-60 hover:opacity-100' : 'bg-white'}`}
+                          className={`group rounded-2xl overflow-hidden flex flex-col card-hover transition-all duration-300 ${ isCompleted
+                            ? 'bg-gradient-to-br from-gray-100 to-gray-50 dark:from-gray-800/50 dark:to-gray-900/30 opacity-60 hover:opacity-100'
+                            : 'bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-800 dark:to-gray-900/50 hover:shadow-2xl hover:shadow-blue-500/10 dark:hover:shadow-blue-400/5'
+                          } border border-gray-200/50 dark:border-gray-700/50 shadow-md hover:shadow-xl`}
+                          style={{ animation: `fadeInUp 0.6s ease-out ${0.05 * idx}s both` }}
                         >
-                          {/* ...existing code for list card... */}
+                          {isCompleted && (
+                            <div className="absolute top-3 right-3 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full p-2 z-10 shadow-lg">
+                              <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                            </div>
+                          )}
                           <Link
                             href={`/shopping-lists/${list._id}`}
-                            className="flex-1 p-6 hover:bg-blue-50 transition group block"
+                            className="flex-1 p-6 group block hover:bg-white/50 dark:hover:bg-gray-700/30 transition-colors duration-300"
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              <div className="flex items-center gap-2">
-                                {list.items && list.items.length > 0 && list.items.every((i) => i.purchased) && (
-                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 shrink-0">
-                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                                  </span>
-                                )}
-                                {list.createdAt && (
-                                  <p className="text-xs text-gray-400">
-                                    {moment(list.createdAt).fromNow()}
+                            <div className="space-y-4">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                    {list.name || 'Untitled List'}
                                   </p>
+                                  {list.description && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
+                                      {list.description}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                {list.createdAt && (
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 px-2.5 py-1 rounded-full">
+                                    {moment(list.createdAt).fromNow()}
+                                  </span>
                                 )}
                                 {showRoleBadge && roleLabel && (
                                   <span
-                                    className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${
-                                      role === 'co-owner'
-                                        ? 'bg-purple-100 text-purple-700'
-                                        : 'bg-amber-100 text-amber-700'
+                                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${ role === 'co-owner'
+                                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
                                     }`}
                                   >
                                     {roleLabel}
@@ -329,64 +421,76 @@ export default function DashboardPage() {
                                 )}
                               </div>
                               {list.items && list.items.length > 0 && (
-                                <span className="text-xs text-gray-400 shrink-0">
-                                  {list.items.filter((i) => i.purchased).length}/{list.items.length}
-                                </span>
+                                <div className="pt-2">
+                                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Progress</span>
+                                    <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{Math.round((list.items.filter((i) => i.purchased).length / list.items.length) * 100)}%</span>
+                                  </div>
+                                  <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                    <div
+                                      className="h-full bg-gradient-to-r from-blue-500 to-blue-400 dark:from-blue-400 dark:to-blue-300 transition-all duration-500 rounded-full"
+                                      style={{ width: `${(list.items.filter((i) => i.purchased).length / list.items.length) * 100}%` }}
+                                    ></div>
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </Link>
-                          <div className="px-4 py-2 bg-gray-50 flex items-center gap-1">
+                          <div className="px-5 py-4 bg-gradient-to-r from-white/80 to-blue-50/50 dark:from-gray-900/50 dark:to-gray-800/30 border-t border-gray-100/50 dark:border-gray-700/30 flex items-center gap-2 group/buttons">
                             <Link
                               href={`/shopping-lists/${list._id}`}
-                              className="flex-1 font-semibold text-blue-900 dark:text-blue-200 hover:text-blue-700 dark:hover:text-blue-300 transition text-sm"
+                              className="flex-1 font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 group/link transition text-sm flex items-center gap-1"
                             >
-                              View Items →
+                              View Items
+                              <span className="inline-block group-hover/link:translate-x-1 transition-transform duration-300">→</span>
                             </Link>
-                            {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
-                              <button
-                                onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
-                                title="Peek at quantities"
-                                aria-label="Peek at quantities"
-                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            )}
-                            {permissions.canShare && user?.id && (
-                              <SharingButton
-                                listId={list._id}
-                                owners={list.owners || []}
-                                participants={list.participants || []}
-                                isCreator={true}
-                                onAccessRemoved={handleAccessRemoved}
-                              />
-                            )}
-                            {permissions.canDuplicate && (
-                              <button
-                                onClick={(e) => openDuplicateModal(e, list)}
-                                disabled={deletingIds.has(list._id)}
-                                title="Duplicate this list"
-                                aria-label="Duplicate this list"
-                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                            )}
-                            {permissions.canDelete && (
-                              <button
-                                onClick={(e) => void handleDeleteList(e, list._id)}
-                                disabled={deletingIds.has(list._id)}
-                                title="Delete this list permanently"
-                                aria-label="Delete this list permanently"
-                                className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {deletingIds.has(list._id) ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
+                                <button
+                                  onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                  title="Peek at quantities"
+                                  aria-label="Peek at quantities"
+                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              {permissions.canShare && user?.id && (
+                                <SharingButton
+                                  listId={list._id}
+                                  owners={list.owners || []}
+                                  participants={list.participants || []}
+                                  isCreator={true}
+                                  onAccessRemoved={handleAccessRemoved}
+                                />
+                              )}
+                              {permissions.canDuplicate && (
+                                <button
+                                  onClick={(e) => openDuplicateModal(e, list)}
+                                  disabled={deletingIds.has(list._id)}
+                                  title="Duplicate this list"
+                                  aria-label="Duplicate this list"
+                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              )}
+                              {permissions.canDelete && (
+                                <button
+                                  onClick={(e) => void handleDeleteList(e, list._id)}
+                                  disabled={deletingIds.has(list._id)}
+                                  title="Delete this list permanently"
+                                  aria-label="Delete this list permanently"
+                                  className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {deletingIds.has(list._id) ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
@@ -396,13 +500,15 @@ export default function DashboardPage() {
               </div>
 
               {/* Template Lists */}
-              <div>
-                <h2 className="text-lg font-bold text-gray-700 mb-3">Templates</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {lists.filter((list) => list.isTemplate).length === 0 ? (
-                    <div className="col-span-full text-gray-500 text-center py-8 bg-white rounded-xl shadow-md">No templates found</div>
-                  ) : (
-                    lists.filter((list) => list.isTemplate).map((list) => {
+              {lists.filter((list) => list.isTemplate).length > 0 && (
+                <div className="animate-in-up" style={{ animationDelay: '0.2s' }}>
+                  <div className="flex items-center gap-3 mb-6">
+                    <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">Templates</h2>
+                    <div className="h-1 flex-1 bg-gradient-to-r from-amber-400 to-transparent rounded-full"></div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {lists.filter((list) => list.isTemplate).map((list, idx) => {
                       const role = getListRole(list, { userId: user?.id, email: user?.email });
                       const permissions = getListPermissions(role);
                       const roleLabel = getRoleLabel(role);
@@ -410,113 +516,118 @@ export default function DashboardPage() {
                       return (
                         <div
                           key={list._id}
-                          className={
-                            `rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col bg-blue-50 dark:bg-gray-800`
-                          }
+                          className="group rounded-2xl overflow-hidden flex flex-col card-hover transition-all duration-300 bg-gradient-to-br from-amber-50/50 to-orange-50/30 dark:from-amber-900/20 dark:to-orange-900/10 hover:shadow-2xl hover:shadow-amber-400/10 dark:hover:shadow-amber-400/5 border border-amber-200/50 dark:border-amber-800/30 shadow-md hover:shadow-xl"
+                          style={{ animation: `fadeInUp 0.6s ease-out ${0.05 * idx}s both` }}
                         >
-                          {/* ...existing code for list card... */}
                           <Link
                             href={`/shopping-lists/${list._id}`}
-                            className="flex-1 p-6 hover:bg-blue-100 dark:hover:bg-gray-700 transition group block"
+                            className="flex-1 p-6 group block hover:bg-white/30 dark:hover:bg-amber-900/20 transition-colors duration-300"
                           >
-                            <div className="flex flex-col gap-2">
-                              <div className="font-semibold text-blue-900 dark:text-blue-200 text-base truncate mb-1">
-                                {list.name || 'Untitled template'}
-                              </div>
-                              <div className="flex items-center justify-between gap-2">
-                                <div className="flex items-center gap-2">
-                                  {list.items && list.items.length > 0 && list.items.every((i) => i.purchased) && (
-                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 shrink-0">
-                                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
-                                    </span>
-                                  )}
-                                  {list.createdAt && (
-                                    <p className="text-xs text-gray-400">
-                                      {moment(list.createdAt).fromNow()}
+                            <div className="space-y-4">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
+                                    {list.name || 'Untitled template'}
+                                  </p>
+                                  {list.description && (
+                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
+                                      {list.description}
                                     </p>
                                   )}
-                                  <span className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-gray-700 text-blue-700 dark:text-blue-200">
-                                    Template
-                                  </span>
-                                  {showRoleBadge && roleLabel && (
-                                    <span
-                                      className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${
-                                        role === 'co-owner'
-                                          ? 'bg-purple-100 text-purple-700'
-                                          : 'bg-amber-100 text-amber-700'
-                                      }`}
-                                    >
-                                      {roleLabel}
-                                    </span>
-                                  )}
                                 </div>
-                                {list.items && list.items.length > 0 && (
-                                  <span className="text-xs text-gray-400 dark:text-gray-300 shrink-0">
-                                    {list.items.length} item{list.items.length !== 1 ? 's' : ''}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-200/50 to-orange-200/50 dark:from-amber-900/40 dark:to-orange-900/30 text-amber-700 dark:text-amber-300 border border-amber-300/30 dark:border-amber-700/30">
+                                  ✨ Template
+                                </span>
+                                {list.createdAt && (
+                                  <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 px-2.5 py-1 rounded-full">
+                                    {moment(list.createdAt).fromNow()}
+                                  </span>
+                                )}
+                                {showRoleBadge && roleLabel && (
+                                  <span
+                                    className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                                      role === 'co-owner'
+                                        ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300'
+                                        : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'
+                                    }`}
+                                  >
+                                    {roleLabel}
                                   </span>
                                 )}
                               </div>
+                              {list.items && list.items.length > 0 && (
+                                <div className="flex items-center gap-2 pt-2">
+                                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full">
+                                    {list.items.length} item{list.items.length !== 1 ? 's' : ''}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                           </Link>
-                          <div className="px-4 py-2 bg-gray-100 dark:bg-gray-900 flex items-center gap-1">
+                          <div className="px-5 py-4 bg-gradient-to-r from-white/50 to-amber-50/30 dark:from-gray-900/30 dark:to-amber-900/10 border-t border-amber-100/50 dark:border-amber-800/30 flex items-center gap-2 group/buttons">
                             <Link
                               href={`/shopping-lists/${list._id}`}
-                              className="flex-1 font-semibold text-blue-900 dark:text-blue-200 hover:text-blue-700 dark:hover:text-blue-300 transition text-sm"
+                              className="flex-1 font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 group/link transition text-sm flex items-center gap-1"
                             >
-                              View Items →
+                              View Items
+                              <span className="inline-block group-hover/link:translate-x-1 transition-transform duration-300">→</span>
                             </Link>
-                            {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
-                              <button
-                                onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
-                                title="Peek at quantities"
-                                aria-label="Peek at quantities"
-                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition"
-                              >
-                                <Eye className="w-4 h-4" />
-                              </button>
-                            )}
-                            {permissions.canShare && user?.id && (
-                              <SharingButton
-                                listId={list._id}
-                                owners={list.owners || []}
-                                participants={list.participants || []}
-                                isCreator={true}
-                                onAccessRemoved={handleAccessRemoved}
-                              />
-                            )}
-                            {permissions.canDuplicate && (
-                              <button
-                                onClick={(e) => openDuplicateModal(e, list)}
-                                disabled={deletingIds.has(list._id)}
-                                title="Duplicate this template"
-                                aria-label="Duplicate this template"
-                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                <Copy className="w-4 h-4" />
-                              </button>
-                            )}
-                            {permissions.canDelete && (
-                              <button
-                                onClick={(e) => void handleDeleteList(e, list._id)}
-                                disabled={deletingIds.has(list._id)}
-                                title="Delete this template permanently"
-                                aria-label="Delete this template permanently"
-                                className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {deletingIds.has(list._id) ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <Trash2 className="w-4 h-4" />
-                                )}
-                              </button>
-                            )}
+                            <div className="flex items-center gap-1">
+                              {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
+                                <button
+                                  onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                  title="Peek at quantities"
+                                  aria-label="Peek at quantities"
+                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </button>
+                              )}
+                              {permissions.canShare && user?.id && (
+                                <SharingButton
+                                  listId={list._id}
+                                  owners={list.owners || []}
+                                  participants={list.participants || []}
+                                  isCreator={true}
+                                  onAccessRemoved={handleAccessRemoved}
+                                />
+                              )}
+                              {permissions.canDuplicate && (
+                                <button
+                                  onClick={(e) => openDuplicateModal(e, list)}
+                                  disabled={deletingIds.has(list._id)}
+                                  title="Duplicate this template"
+                                  aria-label="Duplicate this template"
+                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                              )}
+                              {permissions.canDelete && (
+                                <button
+                                  onClick={(e) => void handleDeleteList(e, list._id)}
+                                  disabled={deletingIds.has(list._id)}
+                                  title="Delete this template permanently"
+                                  aria-label="Delete this template permanently"
+                                  className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                >
+                                  {deletingIds.has(list._id) ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="w-4 h-4" />
+                                  )}
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       );
-                    })
-                  )}
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </main>

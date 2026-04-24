@@ -4,39 +4,39 @@ import { use, useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft,
-  Check,
-  Copy,
-  GripVertical,
-  Loader2,
-  Plus,
-  ShoppingCart,
-  Trash2,
-  X,
+    ArrowLeft,
+    Check,
+    Copy,
+    GripVertical,
+    Loader2,
+    Plus,
+    ShoppingCart,
+    Trash2,
+    X,
 } from 'lucide-react';
 import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  KeyboardSensor,
-  PointerSensor,
-  closestCenter,
-  useSensor,
-  useSensors,
+    DndContext,
+    DragEndEvent,
+    DragOverlay,
+    DragStartEvent,
+    KeyboardSensor,
+    PointerSensor,
+    closestCenter,
+    useSensor,
+    useSensors,
 } from '@dnd-kit/core';
 import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  useSortable,
-  verticalListSortingStrategy,
+    SortableContext,
+    sortableKeyboardCoordinates,
+    useSortable,
+    verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '@/src/lib/auth-context';
 import {
-  getListPermissions,
-  getListRole,
-  getRoleLabel,
+    getListPermissions,
+    getListRole,
+    getRoleLabel,
 } from '@/src/lib/list-permissions';
 import { ShoppingListsService } from '@/src/api/generated';
 import { GroceryItemDto } from '@/src/api/generated/models/GroceryItemDto';
@@ -93,10 +93,10 @@ function IconBtn({
   type?: 'button' | 'submit';
 }) {
   const colours = {
-    default: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100',
-    danger: 'text-red-500 hover:text-red-700 hover:bg-red-50',
-    primary: 'text-blue-600 hover:text-blue-800 hover:bg-blue-50',
-    success: 'text-green-600 hover:text-green-800 hover:bg-green-50',
+    default: 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-gray-800',
+    danger: 'text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900',
+    primary: 'text-blue-600 hover:text-blue-800 hover:bg-blue-50 dark:text-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900',
+    success: 'text-green-600 hover:text-green-800 hover:bg-green-50 dark:text-green-400 dark:hover:text-green-300 dark:hover:bg-green-900',
   };
   return (
     <button
