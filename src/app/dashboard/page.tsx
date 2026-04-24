@@ -274,16 +274,22 @@ export default function DashboardPage() {
       `}</style>
       <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-blue-50 dark:from-gray-950 dark:via-gray-900 dark:to-blue-950">
         <header className="sticky top-0 z-50 backdrop-blur-lg bg-white/70 dark:bg-gray-900/70 border-b border-gray-200/30 dark:border-gray-800/30 shadow-sm animate-in-down">
-          <div className="max-w-7xl mx-auto px-4 py-5 flex flex-col xs:flex-row gap-3 xs:gap-0 xs:flex-nowrap justify-between items-center">
-            <div className="flex items-center gap-4 flex-1 w-full xs:w-auto justify-start">
+          <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4 flex-1 min-w-0">
               {user?.email && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent">Welcome back!</span>
-                  <span className="text-xs text-gray-600 dark:text-gray-400">{user.email}</span>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <span className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-400 dark:to-blue-300 bg-clip-text text-transparent truncate">
+                    {user.given_name && user.family_name
+                      ? `${user.given_name} ${user.family_name}`
+                      : user.email}
+                  </span>
+                  {user.given_name && user.family_name && (
+                    <span className="text-xs text-gray-600 dark:text-gray-400 truncate">{user.email}</span>
+                  )}
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-2 w-full xs:w-auto justify-end flex-wrap">
+            <div className="flex items-center gap-2 flex-shrink-0">
               <button
                 onClick={toggleTheme}
                 className={`rounded-lg p-2.5 backdrop-blur-sm transition-all duration-300 ${theme === 'dark' ? 'bg-yellow-400/10 text-yellow-500 hover:bg-yellow-400/20 hover:scale-110' : 'bg-blue-400/10 text-blue-600 hover:bg-blue-400/20 hover:scale-110'}`}
@@ -391,18 +397,6 @@ export default function DashboardPage() {
                             className="flex-1 p-6 group block hover:bg-white/50 dark:hover:bg-gray-700/30 transition-colors duration-300"
                           >
                             <div className="space-y-4">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    {list.name || 'Untitled List'}
-                                  </p>
-                                  {list.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
-                                      {list.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {list.createdAt && (
                                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 px-2.5 py-1 rounded-full">
@@ -446,14 +440,16 @@ export default function DashboardPage() {
                             </Link>
                             <div className="flex items-center gap-1">
                               {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
-                                <button
-                                  onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
-                                  title="Peek at quantities"
-                                  aria-label="Peek at quantities"
-                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
+                                <div className="relative group/peek">
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                    aria-label="Peek at quantities"
+                                    className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">Quantities</span>
+                                </div>
                               )}
                               {permissions.canShare && user?.id && (
                                 <SharingButton
@@ -465,30 +461,34 @@ export default function DashboardPage() {
                                 />
                               )}
                               {permissions.canDuplicate && (
-                                <button
-                                  onClick={(e) => openDuplicateModal(e, list)}
-                                  disabled={deletingIds.has(list._id)}
-                                  title="Duplicate this list"
-                                  aria-label="Duplicate this list"
-                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </button>
+                                <div className="relative group/dup">
+                                  <button
+                                    onClick={(e) => openDuplicateModal(e, list)}
+                                    disabled={deletingIds.has(list._id)}
+                                    aria-label="Duplicate this list"
+                                    className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">Duplicate</span>
+                                </div>
                               )}
                               {permissions.canDelete && (
-                                <button
-                                  onClick={(e) => void handleDeleteList(e, list._id)}
-                                  disabled={deletingIds.has(list._id)}
-                                  title="Delete this list permanently"
-                                  aria-label="Delete this list permanently"
-                                  className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  {deletingIds.has(list._id) ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </button>
+                                <div className="relative group/del">
+                                  <button
+                                    onClick={(e) => void handleDeleteList(e, list._id)}
+                                    disabled={deletingIds.has(list._id)}
+                                    aria-label="Delete this list permanently"
+                                    className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    {deletingIds.has(list._id) ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">Delete</span>
+                                </div>
                               )}
                             </div>
                           </div>
@@ -524,22 +524,12 @@ export default function DashboardPage() {
                             className="flex-1 p-6 group block hover:bg-white/30 dark:hover:bg-amber-900/20 transition-colors duration-300"
                           >
                             <div className="space-y-4">
-                              <div className="flex items-start justify-between gap-2">
-                                <div className="flex-1 min-w-0">
-                                  <p className="font-semibold text-gray-900 dark:text-gray-100 text-lg truncate group-hover:text-amber-700 dark:group-hover:text-amber-400 transition-colors">
-                                    {list.name || 'Untitled template'}
-                                  </p>
-                                  {list.description && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400 truncate mt-1">
-                                      {list.description}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-semibold px-3 py-1.5 rounded-full bg-gradient-to-r from-amber-200/50 to-orange-200/50 dark:from-amber-900/40 dark:to-orange-900/30 text-amber-700 dark:text-amber-300 border border-amber-300/30 dark:border-amber-700/30">
-                                  ✨ Template
-                                </span>
+                                {list.items && list.items.length > 0 && (
+                                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full">
+                                    {list.items.length} item{list.items.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
                                 {list.createdAt && (
                                   <span className="text-xs font-medium text-gray-500 dark:text-gray-400 bg-gray-100/50 dark:bg-gray-800/50 px-2.5 py-1 rounded-full">
                                     {moment(list.createdAt).fromNow()}
@@ -557,13 +547,6 @@ export default function DashboardPage() {
                                   </span>
                                 )}
                               </div>
-                              {list.items && list.items.length > 0 && (
-                                <div className="flex items-center gap-2 pt-2">
-                                  <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full">
-                                    {list.items.length} item{list.items.length !== 1 ? 's' : ''}
-                                  </span>
-                                </div>
-                              )}
                             </div>
                           </Link>
                           <div className="px-5 py-4 bg-gradient-to-r from-white/50 to-amber-50/30 dark:from-gray-900/30 dark:to-amber-900/10 border-t border-amber-100/50 dark:border-amber-800/30 flex items-center gap-2 group/buttons">
@@ -576,14 +559,16 @@ export default function DashboardPage() {
                             </Link>
                             <div className="flex items-center gap-1">
                               {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
-                                <button
-                                  onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
-                                  title="Peek at quantities"
-                                  aria-label="Peek at quantities"
-                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
-                                >
-                                  <Eye className="w-4 h-4" />
-                                </button>
+                                <div className="relative group/peek">
+                                  <button
+                                    onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                    aria-label="Peek at quantities"
+                                    className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30 transition-all duration-300 hover:scale-110"
+                                  >
+                                    <Eye className="w-4 h-4" />
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">Quantities</span>
+                                </div>
                               )}
                               {permissions.canShare && user?.id && (
                                 <SharingButton
@@ -595,30 +580,34 @@ export default function DashboardPage() {
                                 />
                               )}
                               {permissions.canDuplicate && (
-                                <button
-                                  onClick={(e) => openDuplicateModal(e, list)}
-                                  disabled={deletingIds.has(list._id)}
-                                  title="Duplicate this template"
-                                  aria-label="Duplicate this template"
-                                  className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  <Copy className="w-4 h-4" />
-                                </button>
+                                <div className="relative group/dup">
+                                  <button
+                                    onClick={(e) => openDuplicateModal(e, list)}
+                                    disabled={deletingIds.has(list._id)}
+                                    aria-label="Duplicate this template"
+                                    className="rounded-lg p-2 text-gray-500 dark:text-gray-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    <Copy className="w-4 h-4" />
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">Duplicate</span>
+                                </div>
                               )}
                               {permissions.canDelete && (
-                                <button
-                                  onClick={(e) => void handleDeleteList(e, list._id)}
-                                  disabled={deletingIds.has(list._id)}
-                                  title="Delete this template permanently"
-                                  aria-label="Delete this template permanently"
-                                  className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
-                                >
-                                  {deletingIds.has(list._id) ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    <Trash2 className="w-4 h-4" />
-                                  )}
-                                </button>
+                                <div className="relative group/del">
+                                  <button
+                                    onClick={(e) => void handleDeleteList(e, list._id)}
+                                    disabled={deletingIds.has(list._id)}
+                                    aria-label="Delete this template permanently"
+                                    className="rounded-lg p-2 text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-100/50 dark:hover:bg-red-900/30 transition-all duration-300 hover:scale-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                                  >
+                                    {deletingIds.has(list._id) ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      <Trash2 className="w-4 h-4" />
+                                    )}
+                                  </button>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">Delete</span>
+                                </div>
                               )}
                             </div>
                           </div>

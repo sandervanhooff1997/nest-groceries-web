@@ -74,25 +74,24 @@ export function SharingButton({
   const buttonLabel = isShared ? 'Manage shared access' : 'Share list';
 
   return (
-    <div className="relative group shrink-0">
+    <div className="relative group/share shrink-0">
       <button
         onClick={() => setShowModal(true)}
-        title={buttonLabel}
         aria-label={buttonLabel}
-        className={`relative rounded-lg p-2 transition ${
+        className={`relative rounded-lg p-2 transition-all duration-300 hover:scale-110 ${
           isShared
-            ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50'
-            : 'text-gray-500 hover:text-blue-600 hover:bg-blue-50'
+            ? 'text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-100/50 dark:hover:bg-blue-900/30'
+            : 'text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-100/50 dark:hover:bg-blue-900/30'
         }`}
       >
-        <Users className="w-5 h-5" />
+        <Users className="w-4 h-4" />
         {isShared && (
-          <span className="absolute -top-0.5 -right-0.5 bg-blue-600 text-white text-[10px] leading-none rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-semibold">
+          <span className="absolute -top-0.5 -right-0.5 bg-blue-600 dark:bg-blue-500 text-white text-[10px] leading-none rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center font-semibold">
             {sharedUsers.length}
           </span>
         )}
       </button>
-      <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity z-10 no-underline">
+      <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/share:opacity-100 transition-opacity shadow-lg z-50 no-underline">
         {tooltipText}
       </span>
 
