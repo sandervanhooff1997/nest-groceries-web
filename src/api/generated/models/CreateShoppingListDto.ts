@@ -6,5 +6,7 @@ import type { GroceryItemDto } from './GroceryItemDto';
 export type CreateShoppingListDto = {
     name: string;
     items: Array<GroceryItemDto>;
+    isTemplate?: boolean;
+    fromTemplateId?: string;
 };
 

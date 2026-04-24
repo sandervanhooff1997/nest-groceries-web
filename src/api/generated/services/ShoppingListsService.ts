@@ -5,6 +5,10 @@
 import type { CreateShoppingListDto } from '../models/CreateShoppingListDto';
 import type { DuplicateShoppingListDto } from '../models/DuplicateShoppingListDto';
 import type { GroceryItemDto } from '../models/GroceryItemDto';
+import type { RemoveAccessDto } from '../models/RemoveAccessDto';
+import type { ReorderGroceryItemsDto } from '../models/ReorderGroceryItemsDto';
+import type { ShareShoppingListDto } from '../models/ShareShoppingListDto';
+import type { UpdateGroceryItemDto } from '../models/UpdateGroceryItemDto';
 import type { UpdateShoppingListDto } from '../models/UpdateShoppingListDto';
 import type { CancelablePromise } from '../core/CancelablePromise';
 import { OpenAPI } from '../core/OpenAPI';
@@ -119,6 +123,50 @@ export class ShoppingListsService {
         });
     }
     /**
+     * Share a shopping list with another user
+     * @returns any Shopping list shared successfully.
+     * @throws ApiError
+     */
+    public static shoppingListActionsControllerShare({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody: ShareShoppingListDto,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/shopping-lists/{id}/share',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Remove access to a shopping list from a user
+     * @returns any Access removed successfully.
+     * @throws ApiError
+     */
+    public static shoppingListActionsControllerRemoveAccess({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody: RemoveAccessDto,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'POST',
+            url: '/api/shopping-lists/{id}/remove-access',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
      * Add a grocery item to a shopping list
      * @returns any Grocery item added successfully.
      * @throws ApiError
@@ -159,6 +207,54 @@ export class ShoppingListsService {
                 'id': id,
                 'itemId': itemId,
             },
+        });
+    }
+    /**
+     * Update a grocery item
+     * @returns any Grocery item updated successfully.
+     * @throws ApiError
+     */
+    public static groceryItemActionsControllerUpdateItem({
+        id,
+        itemId,
+        requestBody,
+    }: {
+        id: string,
+        itemId: string,
+        requestBody: UpdateGroceryItemDto,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/shopping-lists/{id}/items/{itemId}',
+            path: {
+                'id': id,
+                'itemId': itemId,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
+        });
+    }
+    /**
+     * Reorder grocery items in a shopping list
+     * Supply all item IDs in the desired order. Each item receives an `order` value equal to its index in the array.
+     * @returns any Items reordered successfully.
+     * @throws ApiError
+     */
+    public static groceryItemsControllerReorderItems({
+        id,
+        requestBody,
+    }: {
+        id: string,
+        requestBody: ReorderGroceryItemsDto,
+    }): CancelablePromise<any> {
+        return __request(OpenAPI, {
+            method: 'PATCH',
+            url: '/api/shopping-lists/{id}/items/reorder',
+            path: {
+                'id': id,
+            },
+            body: requestBody,
+            mediaType: 'application/json',
         });
     }
     /**

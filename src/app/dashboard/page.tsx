@@ -2,12 +2,37 @@
 
 import { LogoutLink } from '@kinde-oss/kinde-auth-nextjs/components';
 import Link from 'next/link';
-import { useCallback, useEffect, useState } from 'react';
-import { Copy, Loader2, LogOut, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, Copy, Eye, Loader2, LogOut, Plus, Trash2 } from 'lucide-react';
+import { useRef } from 'react';
 import { ProtectedRoute } from '@/src/components/protected-route';
+import { CreateListModal } from '@/src/components/create-list-modal';
+import { DuplicateModal } from '@/src/components/duplicate-modal';
+import { PeekModal } from '@/src/components/peek-modal';
+import { SharingButton } from '@/src/components/sharing-button';
 import { useAuth } from '@/src/lib/auth-context';
+import {
+  getListPermissions,
+  getListRole,
+  getRoleLabel,
+} from '@/src/lib/list-permissions';
 import { ShoppingListsService } from '@/src/api/generated';
 import { useRouter } from 'next/navigation';
+import moment from 'moment';
+import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
+
+interface GroceryItem {
+  _id: string;
+  name: string;
+  quantity?: number;
+  unit?: string;
+  purchased?: boolean;
+}
+
+interface SharedUser {
+  _id: string;
+  email: string;
+}
 
 interface ShoppingList {
   _id: string;
@@ -15,20 +40,29 @@ interface ShoppingList {
   name?: string;
   description?: string;
   createdAt?: string;
+  createdBy?: string;
+  isTemplate?: boolean;
+  items?: GroceryItem[];
+  owners?: SharedUser[];
+  participants?: SharedUser[];
 }
 
 export default function DashboardPage() {
   const { token } = useAuth();
+  const { user } = useKindeBrowserClient();
   const router = useRouter();
   const [lists, setLists] = useState<ShoppingList[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [newTitle, setNewTitle] = useState('');
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-  const [duplicatingIds, setDuplicatingIds] = useState<Set<string>>(new Set());
+  const [isDuplicating, setIsDuplicating] = useState(false);
+  const [duplicateTarget, setDuplicateTarget] = useState<ShoppingList | null>(null);
+  const [peekTarget, setPeekTarget] = useState<ShoppingList | null>(null);
   const [error, setError] = useState('');
 
-  const fetchLists = useCallback(async () => {
+  // Fetch lists from backend
+  const fetchLists = async () => {
     if (!token) return;
     setIsLoading(true);
     setError('');
@@ -43,24 +77,85 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token]);
+  };
 
   useEffect(() => {
-    void fetchLists();
-  }, [fetchLists]);
+    fetchLists();
+  }, [token]);
 
-  const handleCreateList = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newTitle.trim() || !token) return;
+  // Preferences menu state
+  const [showPrefs, setShowPrefs] = useState(false);
+  const prefsRef = useRef<HTMLDivElement>(null);
+  // Close menu on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (prefsRef.current && !prefsRef.current.contains(e.target as Node)) {
+        setShowPrefs(false);
+      }
+    }
+    if (showPrefs) {
+      document.addEventListener('mousedown', handleClick);
+    } else {
+      document.removeEventListener('mousedown', handleClick);
+    }
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showPrefs]);
 
+  // Theme state for icon
+  const [theme, setTheme] = useState('light');
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    }
+    const handler = () => {
+      setTheme(document.documentElement.classList.contains('dark') ? 'dark' : 'light');
+    };
+    window.addEventListener('storage', handler);
+    return () => window.removeEventListener('storage', handler);
+  }, []);
+
+  const toggleTheme = () => {
+    if (typeof window !== 'undefined') {
+      const next = document.documentElement.classList.contains('dark') ? 'light' : 'dark';
+      if (next === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+      localStorage.setItem('theme', next);
+      setTheme(next);
+    }
+  };
+
+
+  // Generate list name utility
+  const generateListName = () => {
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yyyy = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const ms = String(now.getMilliseconds()).padStart(3, '0');
+    return `${dd}-${mm}-${yyyy} ${hh}:${min}:${ss}.${ms}u`;
+  };
+
+  const handleCreateList = async (opts: { isTemplate: boolean; fromTemplateIds?: string[]; name?: string }) => {
+    if (!token) return;
     setIsCreating(true);
     setError('');
     try {
       const created = (await ShoppingListsService.shoppingListsControllerCreate({
-        requestBody: { name: newTitle, items: [] },
+        requestBody: {
+          name: opts.isTemplate && opts.name ? opts.name : generateListName(),
+          items: [],
+          isTemplate: opts.isTemplate,
+          fromTemplateId: opts.fromTemplateIds && opts.fromTemplateIds.length > 0 ? opts.fromTemplateIds[0] : undefined,
+        },
       })) as ShoppingList;
-      setLists((prev) => [...prev, created]);
-      setNewTitle('');
+      setShowCreateModal(false);
+      router.push(`/shopping-lists/${created._id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create list');
     } finally {
@@ -87,75 +182,85 @@ export default function DashboardPage() {
     }
   };
 
-  const handleDuplicateList = async (e: React.MouseEvent, listId: string) => {
+  const openDuplicateModal = (e: React.MouseEvent, list: ShoppingList) => {
     e.preventDefault();
-    if (!token) return;
-    setDuplicatingIds((prev) => new Set(prev).add(listId));
+    setDuplicateTarget(list);
+  };
+
+  const handleConfirmDuplicate = async (itemIds: string[], itemOverrides: { id: string; quantity?: number; unit?: string }[]) => {
+    if (!token || !duplicateTarget) return;
+    setIsDuplicating(true);
     setError('');
     try {
-      const duplicated = (await ShoppingListsService.shoppingListActionsControllerDuplicate({
-        id: listId,
-        requestBody: {},
+      const result = (await ShoppingListsService.shoppingListActionsControllerDuplicate({
+        id: duplicateTarget._id,
+        requestBody: { itemIds, itemOverrides: itemOverrides as any },
       })) as ShoppingList;
-      router.push(`/shopping-lists/${duplicated._id}`);
+      router.push(`/shopping-lists/${result._id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to duplicate list');
-      setDuplicatingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(listId);
-        return next;
-      });
+      setIsDuplicating(false);
     }
+  };
+
+  const handleAccessRemoved = () => {
+    void fetchLists();
   };
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gray-50">
         <header className="bg-white shadow sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-3xl">🛒</span>
-              <h1 className="text-2xl font-bold text-gray-800">My Shopping Lists</h1>
+          <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col xs:flex-row gap-2 xs:gap-0 xs:flex-nowrap justify-between items-center">
+            <div className="flex items-center gap-4 flex-1 w-full xs:w-auto justify-start">
+              {user?.email && (
+                <span className="text-sm text-gray-700 font-medium">Welcome, {user.email}</span>
+              )}
             </div>
-            <LogoutLink
-              postLogoutRedirectURL="/"
-              title="Log out"
-              aria-label="Log out"
-              className="rounded-lg p-2 text-red-600 hover:text-red-800 hover:bg-red-50 transition"
-            >
-              <LogOut className="w-5 h-5" />
-            </LogoutLink>
+            <div className="flex items-center gap-1 w-full xs:w-auto justify-end flex-wrap">
+              <button
+                onClick={() => {
+                  // Find the theme toggle button in the DOM and click it
+                  const btn = document.querySelector('[aria-label="Toggle dark mode"]');
+                  if (btn) (btn as HTMLButtonElement).click();
+                }}
+                className="rounded-lg p-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-100 shadow hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+                aria-label="Toggle dark mode"
+                type="button"
+              >
+                {typeof window !== 'undefined' && document.documentElement.classList.contains('dark') ? '🌙' : '☀️'}
+              </button>
+              <div className="relative group">
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  disabled={isCreating}
+                  aria-label="Create new shopping list"
+                  className="rounded-lg p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  {isCreating ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Plus className="w-5 h-5" />
+                  )}
+                </button>
+                <span className="pointer-events-none absolute right-0 top-full mt-1 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity no-underline">
+                  New list
+                </span>
+              </div>
+              <div className="w-px h-6 bg-gray-200 mx-1" />
+              <LogoutLink
+                postLogoutRedirectURL="/"
+                title="Log out"
+                aria-label="Log out"
+                className="rounded-lg p-2 text-red-600 hover:text-red-800 hover:bg-red-50 transition"
+              >
+                <LogOut className="w-5 h-5" />
+              </LogoutLink>
+            </div>
           </div>
         </header>
 
         <main className="max-w-7xl mx-auto px-4 py-8">
-          <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Create New List</h2>
-            <form onSubmit={handleCreateList} className="flex gap-3">
-              <input
-                type="text"
-                placeholder="Give your list a name..."
-                value={newTitle}
-                onChange={(e) => setNewTitle(e.target.value)}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <button
-                type="submit"
-                disabled={isCreating || !newTitle.trim()}
-                title="Create new shopping list"
-                aria-label="Create new shopping list"
-                className="px-5 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition flex items-center gap-2"
-              >
-                {isCreating ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Plus className="w-4 h-4" />
-                )}
-                {isCreating ? 'Creating…' : 'Create'}
-              </button>
-            </form>
-          </div>
-
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-lg">
               {error}
@@ -176,68 +281,271 @@ export default function DashboardPage() {
               <p className="text-gray-500">Create one above to get started!</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {lists.map((list) => (
-                <div
-                  key={list._id}
-                  className="bg-white rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col"
-                >
-                  <Link
-                    href={`/shopping-lists/${list._id}`}
-                    className="flex-1 p-6 hover:bg-blue-50 transition group block"
-                  >
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2 group-hover:text-blue-600 transition">
-                      {list.title ?? list.name ?? 'Untitled'}
-                    </h3>
-                    {list.description && (
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{list.description}</p>
-                    )}
-                    {list.createdAt && (
-                      <p className="text-xs text-gray-400">
-                        Created {new Date(list.createdAt).toLocaleDateString()}
-                      </p>
-                    )}
-                  </Link>
-                  <div className="px-4 py-2 bg-gray-50 flex items-center gap-1">
-                    <Link
-                      href={`/shopping-lists/${list._id}`}
-                      className="flex-1 text-blue-600 font-semibold hover:text-blue-700 transition text-sm"
-                    >
-                      View Items →
-                    </Link>
-                    <button
-                      onClick={(e) => void handleDuplicateList(e, list._id)}
-                      disabled={duplicatingIds.has(list._id) || deletingIds.has(list._id)}
-                      title="Duplicate this list"
-                      aria-label="Duplicate this list"
-                      className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {duplicatingIds.has(list._id) ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Copy className="w-4 h-4" />
-                      )}
-                    </button>
-                    <button
-                      onClick={(e) => void handleDeleteList(e, list._id)}
-                      disabled={deletingIds.has(list._id) || duplicatingIds.has(list._id)}
-                      title="Delete this list permanently"
-                      aria-label="Delete this list permanently"
-                      className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
-                    >
-                      {deletingIds.has(list._id) ? (
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                      ) : (
-                        <Trash2 className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
+            <>
+              {/* Normal Shopping Lists */}
+              <div className="mb-10">
+                <h2 className="text-lg font-bold text-gray-700 mb-3">My Shopping Lists</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {lists.filter((list) => !list.isTemplate).length === 0 ? (
+                    <div className="col-span-full text-gray-500 text-center py-8 bg-white rounded-xl shadow-md">No shopping lists found</div>
+                  ) : (
+                    lists.filter((list) => !list.isTemplate).map((list) => {
+                      const role = getListRole(list, { userId: user?.id, email: user?.email });
+                      const permissions = getListPermissions(role);
+                      const roleLabel = getRoleLabel(role);
+                      const showRoleBadge = role === 'co-owner' || role === 'participant';
+                      return (
+                        <div
+                          key={list._id}
+                          className={`rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col ${list.items && list.items.length > 0 && list.items.every((i) => i.purchased) ? 'bg-gray-100 opacity-60 hover:opacity-100' : 'bg-white'}`}
+                        >
+                          {/* ...existing code for list card... */}
+                          <Link
+                            href={`/shopping-lists/${list._id}`}
+                            className="flex-1 p-6 hover:bg-blue-50 transition group block"
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                {list.items && list.items.length > 0 && list.items.every((i) => i.purchased) && (
+                                  <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 shrink-0">
+                                    <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                  </span>
+                                )}
+                                {list.createdAt && (
+                                  <p className="text-xs text-gray-400">
+                                    {moment(list.createdAt).fromNow()}
+                                  </p>
+                                )}
+                                {showRoleBadge && roleLabel && (
+                                  <span
+                                    className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${
+                                      role === 'co-owner'
+                                        ? 'bg-purple-100 text-purple-700'
+                                        : 'bg-amber-100 text-amber-700'
+                                    }`}
+                                  >
+                                    {roleLabel}
+                                  </span>
+                                )}
+                              </div>
+                              {list.items && list.items.length > 0 && (
+                                <span className="text-xs text-gray-400 shrink-0">
+                                  {list.items.filter((i) => i.purchased).length}/{list.items.length}
+                                </span>
+                              )}
+                            </div>
+                          </Link>
+                          <div className="px-4 py-2 bg-gray-50 flex items-center gap-1">
+                            <Link
+                              href={`/shopping-lists/${list._id}`}
+                              className="flex-1 font-semibold text-blue-900 dark:text-blue-200 hover:text-blue-700 dark:hover:text-blue-300 transition text-sm"
+                            >
+                              View Items →
+                            </Link>
+                            {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                title="Peek at quantities"
+                                aria-label="Peek at quantities"
+                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
+                            {permissions.canShare && user?.id && (
+                              <SharingButton
+                                listId={list._id}
+                                owners={list.owners || []}
+                                participants={list.participants || []}
+                                isCreator={true}
+                                onAccessRemoved={handleAccessRemoved}
+                              />
+                            )}
+                            {permissions.canDuplicate && (
+                              <button
+                                onClick={(e) => openDuplicateModal(e, list)}
+                                disabled={deletingIds.has(list._id)}
+                                title="Duplicate this list"
+                                aria-label="Duplicate this list"
+                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                            )}
+                            {permissions.canDelete && (
+                              <button
+                                onClick={(e) => void handleDeleteList(e, list._id)}
+                                disabled={deletingIds.has(list._id)}
+                                title="Delete this list permanently"
+                                aria-label="Delete this list permanently"
+                                className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {deletingIds.has(list._id) ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
                 </div>
-              ))}
-            </div>
+              </div>
+
+              {/* Template Lists */}
+              <div>
+                <h2 className="text-lg font-bold text-gray-700 mb-3">Templates</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {lists.filter((list) => list.isTemplate).length === 0 ? (
+                    <div className="col-span-full text-gray-500 text-center py-8 bg-white rounded-xl shadow-md">No templates found</div>
+                  ) : (
+                    lists.filter((list) => list.isTemplate).map((list) => {
+                      const role = getListRole(list, { userId: user?.id, email: user?.email });
+                      const permissions = getListPermissions(role);
+                      const roleLabel = getRoleLabel(role);
+                      const showRoleBadge = role === 'co-owner' || role === 'participant';
+                      return (
+                        <div
+                          key={list._id}
+                          className={
+                            `rounded-xl shadow-md hover:shadow-lg transition overflow-hidden flex flex-col bg-blue-50 dark:bg-gray-800`
+                          }
+                        >
+                          {/* ...existing code for list card... */}
+                          <Link
+                            href={`/shopping-lists/${list._id}`}
+                            className="flex-1 p-6 hover:bg-blue-100 dark:hover:bg-gray-700 transition group block"
+                          >
+                            <div className="flex flex-col gap-2">
+                              <div className="font-semibold text-blue-900 dark:text-blue-200 text-base truncate mb-1">
+                                {list.name || 'Untitled template'}
+                              </div>
+                              <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                  {list.items && list.items.length > 0 && list.items.every((i) => i.purchased) && (
+                                    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-green-500 shrink-0">
+                                      <Check className="w-3 h-3 text-white" strokeWidth={3} />
+                                    </span>
+                                  )}
+                                  {list.createdAt && (
+                                    <p className="text-xs text-gray-400">
+                                      {moment(list.createdAt).fromNow()}
+                                    </p>
+                                  )}
+                                  <span className="text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded bg-blue-100 dark:bg-gray-700 text-blue-700 dark:text-blue-200">
+                                    Template
+                                  </span>
+                                  {showRoleBadge && roleLabel && (
+                                    <span
+                                      className={`text-[10px] uppercase tracking-wide font-semibold px-1.5 py-0.5 rounded ${
+                                        role === 'co-owner'
+                                          ? 'bg-purple-100 text-purple-700'
+                                          : 'bg-amber-100 text-amber-700'
+                                      }`}
+                                    >
+                                      {roleLabel}
+                                    </span>
+                                  )}
+                                </div>
+                                {list.items && list.items.length > 0 && (
+                                  <span className="text-xs text-gray-400 dark:text-gray-300 shrink-0">
+                                    {list.items.length} item{list.items.length !== 1 ? 's' : ''}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </Link>
+                          <div className="px-4 py-2 bg-gray-100 dark:bg-gray-900 flex items-center gap-1">
+                            <Link
+                              href={`/shopping-lists/${list._id}`}
+                              className="flex-1 font-semibold text-blue-900 dark:text-blue-200 hover:text-blue-700 dark:hover:text-blue-300 transition text-sm"
+                            >
+                              View Items →
+                            </Link>
+                            {list.items && list.items.some((i) => i.quantity != null || i.unit) && (
+                              <button
+                                onClick={(e) => { e.preventDefault(); setPeekTarget(list); }}
+                                title="Peek at quantities"
+                                aria-label="Peek at quantities"
+                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </button>
+                            )}
+                            {permissions.canShare && user?.id && (
+                              <SharingButton
+                                listId={list._id}
+                                owners={list.owners || []}
+                                participants={list.participants || []}
+                                isCreator={true}
+                                onAccessRemoved={handleAccessRemoved}
+                              />
+                            )}
+                            {permissions.canDuplicate && (
+                              <button
+                                onClick={(e) => openDuplicateModal(e, list)}
+                                disabled={deletingIds.has(list._id)}
+                                title="Duplicate this template"
+                                aria-label="Duplicate this template"
+                                className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-200 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                <Copy className="w-4 h-4" />
+                              </button>
+                            )}
+                            {permissions.canDelete && (
+                              <button
+                                onClick={(e) => void handleDeleteList(e, list._id)}
+                                disabled={deletingIds.has(list._id)}
+                                title="Delete this template permanently"
+                                aria-label="Delete this template permanently"
+                                className="rounded-lg p-2 text-red-500 hover:text-red-700 hover:bg-red-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {deletingIds.has(list._id) ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Trash2 className="w-4 h-4" />
+                                )}
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </>
           )}
         </main>
       </div>
+
+      {showCreateModal && (
+        <CreateListModal
+          templates={lists.filter((l) => l.isTemplate)}
+          isCreating={isCreating}
+          onConfirm={(opts) => void handleCreateList(opts)}
+          onClose={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {peekTarget && (
+        <PeekModal
+          items={peekTarget.items ?? []}
+          onClose={() => setPeekTarget(null)}
+        />
+      )}
+
+      {duplicateTarget && (
+        <DuplicateModal
+          items={duplicateTarget.items ?? []}
+          isDuplicating={isDuplicating}
+          onConfirm={(itemIds, overrides) => void handleConfirmDuplicate(itemIds, overrides)}
+          onClose={() => setDuplicateTarget(null)}
+        />
+      )}
     </ProtectedRoute>
   );
 }

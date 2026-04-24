@@ -1,3 +1,13 @@
+.dark input,
+.dark textarea,
+.dark select {
+  @apply bg-gray-800 text-gray-100 border-gray-700 placeholder-gray-400;
+}
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  @apply border-blue-500 ring-blue-500;
+}
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -12,8 +22,38 @@ html {
   -moz-osx-font-smoothing: grayscale;
 }
 
+
 body {
   @apply font-sans text-gray-900 bg-gray-50;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
+
+.dark .bg-white {
+  @apply bg-gray-800 !important;
+}
+.dark .bg-gray-50 {
+  @apply bg-gray-900 !important;
+}
+.dark .bg-gray-100 {
+  @apply bg-gray-800 !important;
+}
+.dark .text-gray-800 {
+  @apply text-gray-100 !important;
+}
+.dark .text-gray-700 {
+  @apply text-gray-200 !important;
+}
+.dark .text-gray-900 {
+  @apply text-gray-100 !important;
+}
+.dark .shadow,
+.dark .shadow-md,
+.dark .shadow-lg,
+.dark .shadow-xl {
+  box-shadow: 0 2px 8px 0 rgba(0,0,0,0.7) !important;
 }
 
 h1, h2, h3, h4, h5, h6 {

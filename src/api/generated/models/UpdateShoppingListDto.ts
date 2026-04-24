@@ -6,5 +6,6 @@ import type { UpdateGroceryItemDto } from './UpdateGroceryItemDto';
 export type UpdateShoppingListDto = {
     name?: string;
     items?: Array<UpdateGroceryItemDto>;
+    isTemplate?: boolean;
 };
 

@@ -2,12 +2,12 @@
 /* istanbul ignore file */
 /* tslint:disable */
 /* eslint-disable */
-export type UpdateGroceryItemDto = {
-    name?: string;
+export type ItemOverrideDto = {
+    id?: string;
     quantity?: number;
-    unit?: UpdateGroceryItemDto.unit;
+    unit?: ItemOverrideDto.unit;
 };
-export namespace UpdateGroceryItemDto {
+export namespace ItemOverrideDto {
     export enum unit {
         PIECE_S_ = 'Piece(s)',
         GRAM = 'Gram',
