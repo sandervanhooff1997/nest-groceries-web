@@ -4,6 +4,7 @@ import { Users } from 'lucide-react';
 import { useState } from 'react';
 import { SharingModal, SharedUser } from './sharing-modal';
 import { ShoppingListsService } from '@/src/api/generated';
+import { useTranslations } from '@/src/lib/use-translations';
 
 interface Props {
   listId: string;
@@ -20,6 +21,7 @@ export function SharingButton({
   isCreator,
   onAccessRemoved,
 }: Props) {
+  const { t } = useTranslations();
   const [showModal, setShowModal] = useState(false);
   const [isRemoving, setIsRemoving] = useState(false);
 
@@ -71,7 +73,7 @@ export function SharingButton({
     }
   };
 
-  const buttonLabel = isShared ? 'Manage shared access' : 'Share list';
+  const buttonLabel = isShared ? t('manageSharedAccess') : t('shareList');
 
   return (
     <div className="relative group/share shrink-0">

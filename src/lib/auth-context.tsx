@@ -21,8 +21,8 @@ OpenAPI.TOKEN = async () => currentAccessToken ?? '';
 
 type AuthState = {
   user: (KindeUser<Record<string, string>> & {
-    given_name?: string;
-    family_name?: string;
+    given_name?: string | null;
+    family_name?: string | null;
   }) | null;
   isAuthenticated: boolean;
   isLoading: boolean;

@@ -33,6 +33,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { useAuth } from '@/src/lib/auth-context';
+import { useTranslations } from '@/src/lib/use-translations';
 import {
     getListPermissions,
     getListRole,
@@ -71,26 +72,12 @@ interface ShoppingList {
 }
 
 const UNIT_OPTIONS: { value: GroceryItemDto.unit; label: string }[] = [
-  { value: GroceryItemDto.unit.PIECE_S_, label: 'Piece(s)' },
+  { value: GroceryItemDto.unit.PIECE_S_, label: 'Stuk(s)' },
   { value: GroceryItemDto.unit.GRAM, label: 'Gram' },
   { value: GroceryItemDto.unit.KILOGRAM, label: 'Kilogram' },
   { value: GroceryItemDto.unit.LITER, label: 'Liter' },
   { value: GroceryItemDto.unit.MILLILITER, label: 'Milliliter' },
 ];
-
-const CATEGORY_LABELS: Record<string, string> = {
-  fruits_vegetables: 'Fruit & Groente',
-  bread: 'Brood',
-  meat_deli: 'Vlees & Deli',
-  cheese: 'Kaas',
-  dairy: 'Zuivel',
-  pasta_rice_sauces: 'Pasta, Rijst & Sauzen',
-  breakfast_snacks: 'Ontbijt & Snacks',
-  nonfood_promotions: 'Huishouden & Promoties',
-  beverages: 'Dranken',
-  frozen_foods: 'Diepvries',
-  checkout: 'Kassa',
-};
 
 const CATEGORY_ORDER: Record<string, number> = {
   fruits_vegetables: 0,
@@ -208,6 +195,8 @@ function SortableItem({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  const { t } = useTranslations();
+
   return (
     <li
       ref={setNodeRef}
@@ -218,8 +207,8 @@ function SortableItem({
       <button
         {...attributes}
         {...listeners}
-        title="Drag to reorder"
-        aria-label="Drag to reorder"
+        title={t('dragToReorder')}
+        aria-label={t('dragToReorder')}
         className="text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none shrink-0"
       >
         <GripVertical className="w-4 h-4" />
@@ -230,8 +219,8 @@ function SortableItem({
         <button
           onClick={onToggle}
           disabled={isToggling || isRemoving || editing}
-          title={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
-          aria-label={item.purchased ? 'Mark as not purchased' : 'Mark as purchased'}
+          title={item.purchased ? t('markAsNotPurchased') : t('markAsPurchased')}
+          aria-label={item.purchased ? t('markAsNotPurchased') : t('markAsPurchased')}
           className={`w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition disabled:opacity-40 ${
             item.purchased
               ? 'bg-green-500 border-green-500 text-white'
@@ -270,13 +259,13 @@ function SortableItem({
               if (e.key === 'Enter') void commitEdit();
               if (e.key === 'Escape') cancelEdit();
             }}
-            aria-label="Quantity"
+            aria-label={t('quantity')}
             className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <select
             value={editUnit}
             onChange={(e) => setEditUnit(e.target.value)}
-            aria-label="Unit"
+            aria-label={t('unit')}
             className="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
           >
             {UNIT_OPTIONS_WITH_NONE.map((o) => (
@@ -286,14 +275,14 @@ function SortableItem({
           <button
             onClick={() => void commitEdit()}
             disabled={isSaving || !editName.trim()}
-            aria-label="Save"
+            aria-label={t('save')}
             className="rounded-lg p-1.5 text-blue-600 hover:bg-blue-50 disabled:opacity-40 transition"
           >
             {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
           </button>
           <button
             onClick={cancelEdit}
-            aria-label="Cancel"
+            aria-label={t('cancel_action')}
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 transition"
           >
             <X className="w-4 h-4" />
@@ -303,7 +292,7 @@ function SortableItem({
         <div
           className="flex-1 min-w-0 cursor-pointer"
           onClick={startEdit}
-          title="Click to edit"
+          title={t('clickToEdit')}
         >
           <span className={`font-medium ${item.purchased ? 'line-through text-gray-400' : 'text-gray-800'}`}>
             {item.name}
@@ -321,7 +310,7 @@ function SortableItem({
         <IconBtn
           onClick={onRemove}
           disabled={isRemoving || isToggling}
-          title="Remove item from list"
+          title={t('removeItemFromList')}
           variant="danger"
         >
           {isRemoving ? (
@@ -363,6 +352,7 @@ export default function ShoppingListDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const { t } = useTranslations();
   const { id: listId } = use(params);
   const { token } = useAuth();
   const { user } = useKindeBrowserClient();
@@ -406,7 +396,7 @@ export default function ShoppingListDetailPage({
       })) as ShoppingList;
       setList(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch list');
+      setError(err instanceof Error ? err.message : t('failedToFetchList'));
     } finally {
       setIsLoading(false);
     }
@@ -432,7 +422,7 @@ export default function ShoppingListDetailPage({
       setNewItemQuantity('1');
       setNewItemUnit(GroceryItemDto.unit.PIECE_S_);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add item');
+      setError(err instanceof Error ? err.message : t('failedToAddItem'));
     } finally {
       setIsAddingItem(false);
     }
@@ -459,7 +449,7 @@ export default function ShoppingListDetailPage({
       ) as ShoppingList;
       setList(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update item');
+      setError(err instanceof Error ? err.message : t('failedToUpdateItem'));
       void loadList();
     } finally {
       setTogglingItems((prev) => {
@@ -481,7 +471,7 @@ export default function ShoppingListDetailPage({
       })) as ShoppingList;
       setList(updated);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to remove item');
+      setError(err instanceof Error ? err.message : t('failedToRemoveItem'));
     } finally {
       setRemovingItems((prev) => {
         const next = new Set(prev);
@@ -492,14 +482,14 @@ export default function ShoppingListDetailPage({
   };
 
   const handleDeleteList = async () => {
-    if (!token || !confirm('Delete this shopping list? This cannot be undone.')) return;
+    if (!token || !confirm(t('deleteConfirmation'))) return;
     setIsDeletingList(true);
     setError('');
     try {
       await ShoppingListsService.shoppingListsControllerDelete({ id: listId });
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete list');
+      setError(err instanceof Error ? err.message : t('failedToDeleteList'));
       setIsDeletingList(false);
     }
   };
@@ -515,7 +505,7 @@ export default function ShoppingListDetailPage({
       })) as ShoppingList;
       router.push(`/shopping-lists/${duplicated._id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to duplicate list');
+      setError(err instanceof Error ? err.message : t('failedToDuplicateList'));
       setIsDuplicating(false);
     }
   };
@@ -562,7 +552,7 @@ export default function ShoppingListDetailPage({
           id: listId,
           requestBody: { itemIds: withOrder.map((i) => i._id) },
         }).catch(() => {
-          setError('Failed to save new order');
+          setError(t('failedToSaveOrder'));
           void loadList();
         });
       }, 400);
@@ -595,8 +585,8 @@ export default function ShoppingListDetailPage({
           <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-2">
             <Link
               href="/dashboard"
-              title="Back to all lists"
-              aria-label="Back to all lists"
+              title="{t('backToAllLists')}"
+              aria-label="{t('backToAllLists')}"
               className="rounded-lg p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 transition"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -605,7 +595,7 @@ export default function ShoppingListDetailPage({
             <div className="flex-1 flex items-center gap-2 justify-end pr-2">
               {list?.isTemplate && (
                 <span className="text-[10px] uppercase tracking-wide font-semibold px-2 py-0.5 rounded bg-blue-100 text-blue-700">
-                  Template
+                  {t('template')}
                 </span>
               )}
               {showRoleBadge && roleLabel && (
@@ -635,7 +625,7 @@ export default function ShoppingListDetailPage({
                 <IconBtn
                   onClick={() => setShowDuplicateModal(true)}
                   disabled={isDuplicating}
-                  title="Duplicate this list"
+                  title={t('duplicateThisList')}
                   variant="default"
                 >
                   {isDuplicating ? (
@@ -649,7 +639,7 @@ export default function ShoppingListDetailPage({
                 <IconBtn
                   onClick={() => void handleDeleteList()}
                   disabled={isDeletingList}
-                  title="Delete this list permanently"
+                  title={t('deleteThisListPermanently')}
                   variant="danger"
                 >
                   {isDeletingList ? (
@@ -675,12 +665,12 @@ export default function ShoppingListDetailPage({
           <div className="bg-white rounded-xl shadow-md p-6">
             <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
               <ShoppingCart className="w-5 h-5 text-blue-600" />
-              Add Item
+              {t('addItem')}
             </h2>
             <form onSubmit={(e) => void handleAddItem(e)} className="space-y-3">
               <input
                 type="text"
-                placeholder="Item name…"
+                placeholder={t('itemName')}
                 value={newItemName}
                 onChange={(e) => setNewItemName(e.target.value)}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -690,18 +680,18 @@ export default function ShoppingListDetailPage({
                 <input
                   type="number"
                   min={1}
-                  placeholder="Qty"
+                  placeholder={t('qty')}
                   value={newItemQuantity}
                   onChange={(e) => setNewItemQuantity(e.target.value)}
-                  title="Quantity"
-                  aria-label="Quantity"
+                  title={t('quantity')}
+                  aria-label={t('quantity')}
                   className="w-24 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 <select
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value as GroceryItemDto.unit)}
-                  title="Unit of measurement"
-                  aria-label="Unit of measurement"
+                  title={t('unitOfMeasurement')}
+                  aria-label={t('unitOfMeasurement')}
                   className="flex-1 px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                 >
                   {UNIT_OPTIONS.map((opt) => (
@@ -713,8 +703,8 @@ export default function ShoppingListDetailPage({
                 <button
                   type="submit"
                   disabled={isAddingItem || !newItemName.trim()}
-                  title="Add item to list"
-                  aria-label="Add item to list"
+                  title={t('add')}
+                  aria-label={t('add')}
                   className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg transition flex items-center gap-2"
                 >
                   {isAddingItem ? (
@@ -722,19 +712,19 @@ export default function ShoppingListDetailPage({
                   ) : (
                     <Plus className="w-4 h-4" />
                   )}
-                  <span className="font-semibold">{isAddingItem ? 'Adding…' : 'Add'}</span>
+                  <span className="font-semibold">{isAddingItem ? t('adding') : t('add')}</span>
                 </button>
               </div>
             </form>
           </div>
 
-          {/* ── Items list ── */}
+          {/* Items list */}
           <div className="bg-white rounded-xl shadow-md overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Items</h2>
+              <h2 className="text-lg font-semibold text-gray-800">{t('items_list')}</h2>
               {sortedItems.length > 0 && (
                 <span className="text-sm text-gray-500">
-                  {purchasedCount}/{sortedItems.length} purchased
+                  {purchasedCount}/{sortedItems.length} {t('purchased')}
                 </span>
               )}
             </div>
@@ -744,7 +734,7 @@ export default function ShoppingListDetailPage({
                 <Loader2 className="w-7 h-7 text-blue-600 animate-spin" />
               </div>
             ) : sortedItems.length === 0 ? (
-              <div className="py-10 text-center text-gray-500">No items yet. Add one above!</div>
+              <div className="py-10 text-center text-gray-500">{t('noItemsYet')}</div>
             ) : (
               <DndContext
                 sensors={sensors}

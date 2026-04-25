@@ -1,6 +1,7 @@
 'use client';
 
 import { X } from 'lucide-react';
+import { useTranslations } from '@/src/lib/use-translations';
 
 interface GroceryItem {
   _id: string;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export function PeekModal({ items, onClose }: Props) {
+  const { t } = useTranslations();
   const itemsWithDetails = items.filter((i) => i.quantity != null || i.unit);
 
   return (
@@ -25,7 +27,7 @@ export function PeekModal({ items, onClose }: Props) {
     >
       <div className="bg-white rounded-xl shadow-xl w-full max-w-sm mx-4 flex flex-col max-h-[70vh]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800">Items</h2>
+          <h2 className="text-base font-semibold text-gray-800">{t('items_list')}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -37,7 +39,7 @@ export function PeekModal({ items, onClose }: Props) {
 
         <div className="overflow-y-auto flex-1 px-5 py-4">
           {itemsWithDetails.length === 0 ? (
-            <p className="text-gray-400 text-sm text-center py-4">No items with quantity or unit.</p>
+            <p className="text-gray-400 text-sm text-center py-4">{t('noItemsYet')}</p>
           ) : (
             <ul className="space-y-2">
               {itemsWithDetails.map((item) => (

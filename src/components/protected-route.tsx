@@ -3,8 +3,10 @@
 import { useAuth } from '@/src/lib/auth-context';
 import { useRouter } from 'next/navigation';
 import { useEffect, type ReactNode } from 'react';
+import { useTranslations } from '@/src/lib/use-translations';
 
 export function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { t } = useTranslations();
   const { isAuthenticated, isLoading } = useAuth();
   const router = useRouter();
 
@@ -21,7 +23,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <p className="text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );

@@ -1,0 +1,2 @@
+This file cannot be directly updated by the script given the complexity of the replacements.
+The user should manually review changes or use a more targeted approach.

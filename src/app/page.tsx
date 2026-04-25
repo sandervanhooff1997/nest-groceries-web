@@ -44,6 +44,28 @@ export default function HomePage() {
               <p className="text-sm text-gray-500 dark:text-gray-400">Keep lists updated in real-time</p>
             </div>
           </div>
+
+          <div className="mt-16 max-w-4xl mx-auto">
+            <h2 className="text-2xl font-bold text-center mb-8 text-gray-800 dark:text-gray-100">✨ Use Templates to Save Time</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10 rounded-lg p-4 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="text-2xl mb-2">🥬</div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">Weekly Vegetables</p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10 rounded-lg p-4 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="text-2xl mb-2">🍞</div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">Bakery Essentials</p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10 rounded-lg p-4 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="text-2xl mb-2">🥛</div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">Dairy & Dairy-Free</p>
+              </div>
+              <div className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/10 rounded-lg p-4 border border-amber-200/50 dark:border-amber-800/30">
+                <div className="text-2xl mb-2">🍝</div>
+                <p className="font-semibold text-gray-800 dark:text-gray-100">Pantry Staples</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

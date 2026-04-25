@@ -2,40 +2,23 @@
 import { AuthProvider } from '@/src/lib/auth-context';
 import './globals.css';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const [theme, setTheme] = useState('light');
-
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const stored = localStorage.getItem('theme');
       if (stored === 'dark') {
-        setTheme('dark');
         document.documentElement.classList.add('dark');
       } else {
-        setTheme('light');
         document.documentElement.classList.remove('dark');
       }
     }
   }, []);
-
-  const toggleTheme = () => {
-    setTheme((prev) => {
-      const next = prev === 'dark' ? 'light' : 'dark';
-      if (next === 'dark') {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-      localStorage.setItem('theme', next);
-      return next;
-    });
-  };
 
   return (
     <html lang="en">

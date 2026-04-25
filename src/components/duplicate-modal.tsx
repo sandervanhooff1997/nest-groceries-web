@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Check, Copy, Loader2, X } from 'lucide-react';
+import { useTranslations } from '@/src/lib/use-translations';
 
 export interface DuplicateItem {
   _id: string;
@@ -39,6 +40,7 @@ interface Props {
 }
 
 export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Props) {
+  const { t } = useTranslations();
   const [state, setState] = useState<Record<string, ItemState>>(() =>
     Object.fromEntries(
       items.map((i) => [
@@ -80,17 +82,17 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 dark:bg-black/60"
       onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
-      <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[80vh]">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-xl w-full max-w-lg mx-4 flex flex-col max-h-[80vh]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-lg font-semibold text-gray-800">Duplicate list</h2>
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-100">{t('duplicateThisList')}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="rounded-lg p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
+            className="rounded-lg p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
           >
             <X className="w-5 h-5" />
           </button>
@@ -99,18 +101,18 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
         {/* Item list */}
         <div className="overflow-y-auto flex-1 px-6 py-3">
           {items.length === 0 ? (
-            <p className="text-sm text-gray-500 py-4 text-center">No items in this list.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 py-4 text-center">{t('noItemsYet')}</p>
           ) : (
             <>
               {/* Select all */}
-              <div className="flex items-center gap-3 py-2 border-b border-gray-100 mb-1">
+              <div className="flex items-center gap-3 py-2 border-b border-gray-100 dark:border-gray-700 mb-1">
                 <Checkbox checked={allChecked} onChange={toggleAll} />
                 <button
                   type="button"
                   onClick={toggleAll}
-                  className="text-sm text-gray-500 hover:text-gray-700 select-none flex-1 text-left transition"
+                  className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 select-none flex-1 text-left transition"
                 >
-                  {allChecked ? 'Deselect all' : 'Select all'}
+                  {allChecked ? t('deselectAll') : t('selectAll')}
                 </button>
               </div>
 
@@ -121,7 +123,7 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
                     <Checkbox checked={s.checked} onChange={() => toggle(item._id)} />
 
                     <span
-                      className={`flex-1 min-w-0 truncate ${s.checked ? 'text-gray-800' : 'text-gray-400'}`}
+                      className={`flex-1 min-w-0 truncate ${s.checked ? 'text-gray-800 dark:text-gray-100' : 'text-gray-400 dark:text-gray-500'}`}
                     >
                       {item.name}
                     </span>
@@ -134,7 +136,7 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
                       onChange={(e) => setField(item._id, 'quantity', e.target.value)}
                       disabled={!s.checked}
                       aria-label="Quantity"
-                      className="w-16 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-16 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                     />
 
                     {/* Unit */}
@@ -143,7 +145,7 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
                       onChange={(e) => setField(item._id, 'unit', e.target.value)}
                       disabled={!s.checked}
                       aria-label="Unit"
-                      className="w-28 px-2 py-1 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-28 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-40 disabled:cursor-not-allowed"
                     >
                       {UNIT_OPTIONS.map((o) => (
                         <option key={o.value} value={o.value}>
@@ -159,13 +161,13 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100">
+        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-100 dark:border-gray-700">
           <button
             onClick={onClose}
             disabled={isDuplicating}
-            className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition disabled:opacity-40"
+            className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition disabled:opacity-40"
           >
-            Cancel
+            {t('cancel')}
           </button>
           <button
             onClick={handleConfirm}
@@ -177,7 +179,7 @@ export function DuplicateModal({ items, isDuplicating, onConfirm, onClose }: Pro
             ) : (
               <Copy className="w-4 h-4" />
             )}
-            Duplicate {checkedIds.length > 0 && `(${checkedIds.length})`}
+            {t('duplicating')} {checkedIds.length > 0 && `(${checkedIds.length})`}
           </button>
         </div>
       </div>

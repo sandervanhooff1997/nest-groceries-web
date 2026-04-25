@@ -11,12 +11,13 @@ import { DuplicateModal } from '@/src/components/duplicate-modal';
 import { PeekModal } from '@/src/components/peek-modal';
 import { SharingButton } from '@/src/components/sharing-button';
 import { useAuth } from '@/src/lib/auth-context';
+import { useTranslations } from '@/src/lib/use-translations';
 import {
   getListPermissions,
   getListRole,
   getRoleLabel,
 } from '@/src/lib/list-permissions';
-import { ShoppingListsService } from '@/src/api/generated';
+import { ShoppingListsService, type GroceryItemDto } from '@/src/api/generated';
 import { useRouter } from 'next/navigation';
 import moment from 'moment';
 import { useKindeBrowserClient } from '@kinde-oss/kinde-auth-nextjs';
@@ -48,6 +49,7 @@ interface ShoppingList {
 }
 
 export default function DashboardPage() {
+  const { t } = useTranslations();
   const { token } = useAuth();
   const { user } = useKindeBrowserClient();
   const router = useRouter();
@@ -146,17 +148,15 @@ export default function DashboardPage() {
     setIsCreating(true);
     setError('');
     try {
-      let items: GroceryItem[] = [];
-      let fromTemplateIds: string[] | undefined;
+      let items: GroceryItemDto[] = [];
 
       // If templates are selected, merge items from all of them
       if (opts.fromTemplateIds && opts.fromTemplateIds.length > 0) {
-        fromTemplateIds = opts.fromTemplateIds;
         const selectedTemplates = lists.filter(l => opts.fromTemplateIds?.includes(l._id));
         selectedTemplates.forEach(template => {
           if (template.items) {
-            // Strip _id and order fields from items as API doesn't accept them
-            items = [...items, ...template.items.map(({ _id, order, ...item }) => item)];
+            // Strip _id field from items as API doesn't accept it
+            items = [...items, ...template.items.map(({ _id, ...item }) => item) as GroceryItemDto[]];
           }
         });
       }
@@ -166,7 +166,6 @@ export default function DashboardPage() {
           name: opts.isTemplate && opts.name ? opts.name : generateListName(),
           items,
           isTemplate: opts.isTemplate,
-          fromTemplateIds,
         },
       })) as ShoppingList;
       setShowCreateModal(false);
@@ -180,7 +179,7 @@ export default function DashboardPage() {
 
   const handleDeleteList = async (e: React.MouseEvent, listId: string) => {
     e.preventDefault();
-    if (!token || !confirm('Delete this shopping list? This cannot be undone.')) return;
+    if (!token || !confirm(t('deleteConfirmation'))) return;
     setDeletingIds((prev) => new Set(prev).add(listId));
     setError('');
     try {
@@ -317,7 +316,7 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setShowCreateModal(true)}
                   disabled={isCreating}
-                  aria-label="Create new shopping list"
+                  aria-label={t('createNewList')}
                   className="rounded-xl p-2.5 bg-gradient-to-br from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-600 text-white hover:shadow-lg hover:shadow-blue-500/50 dark:hover:shadow-blue-400/50 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center gap-2"
                 >
                   {isCreating ? (
@@ -325,18 +324,18 @@ export default function DashboardPage() {
                   ) : (
                     <>
                       <Plus className="w-5 h-5" />
-                      <span className="hidden sm:inline text-sm font-medium">New List</span>
+                      <span className="hidden sm:inline text-sm font-medium">{t('createNewList')}</span>
                     </>
                   )}
                 </button>
                 <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-full mt-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-3 py-2 text-xs text-white opacity-0 group-hover/create:opacity-100 transition-opacity no-underline shadow-lg z-50">
-                  Create a new shopping list
+                  {t('createNewList')}
                 </span>
               </div>
               <LogoutLink
                 postLogoutRedirectURL="/"
-                title="Log out"
-                aria-label="Log out"
+                title={t('logout')}
+                aria-label={t('logout')}
                 className="rounded-lg p-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:scale-110 transition-all duration-300"
               >
                 <LogOut className="w-5 h-5" />
@@ -362,8 +361,8 @@ export default function DashboardPage() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">Loading your lists…</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">This usually takes just a moment</p>
+                  <p className="text-lg font-semibold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-200 dark:to-gray-400 bg-clip-text text-transparent">{t('loadingList')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">Dit duurt meestal slechts een moment</p>
                 </div>
               </div>
             </div>
@@ -371,8 +370,8 @@ export default function DashboardPage() {
             <div className="text-center py-20 bg-gradient-to-br from-white/80 to-blue-50/50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-2xl shadow-sm border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm animate-in-up space-y-6">
               <div className="text-7xl animate-bounce" style={{ animationDuration: '2s' }}>📭</div>
               <div>
-                <p className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent mb-2">No shopping lists yet</p>
-                <p className="text-gray-600 dark:text-gray-400">Create one above to get started and organize your shopping!</p>
+                <p className="text-xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent mb-2">{t('noListsYet')}</p>
+                <p className="text-gray-600 dark:text-gray-400">Maak er een boven aan om aan de slag te gaan en je boodschappen in te delen!</p>
               </div>
             </div>
           ) : (
@@ -380,12 +379,12 @@ export default function DashboardPage() {
               {/* Normal Shopping Lists */}
               <div className="mb-14 animate-in-up" style={{ animationDelay: '0.1s' }}>
                 <div className="flex items-center gap-3 mb-6">
-                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">My Shopping Lists</h2>
+                  <h2 className="text-2xl font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">{t('myShoppingLists')}</h2>
                   <div className="h-1 flex-1 bg-gradient-to-r from-blue-400 to-transparent rounded-full"></div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {lists.filter((list) => !list.isTemplate).length === 0 ? (
-                    <div className="col-span-full text-gray-500 dark:text-gray-400 text-center py-12 bg-gradient-to-br from-white/50 to-blue-50/50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">No shopping lists found</div>
+                    <div className="col-span-full text-gray-500 dark:text-gray-400 text-center py-12 bg-gradient-to-br from-white/50 to-blue-50/50 dark:from-gray-800/50 dark:to-blue-900/20 rounded-xl border border-gray-200/50 dark:border-gray-700/50 backdrop-blur-sm">{t('noListsYet')}</div>
                   ) : (
                     lists.filter((list) => !list.isTemplate).map((list, idx) => {
                       const role = getListRole(list, { userId: user?.id, email: user?.email });
@@ -432,7 +431,7 @@ export default function DashboardPage() {
                               {list.items && list.items.length > 0 && (
                                 <div className="pt-2">
                                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Progress</span>
+                                    <span className="text-xs font-semibold text-gray-600 dark:text-gray-400">Voortgang</span>
                                     <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{Math.round((list.items.filter((i) => i.purchased).length / list.items.length) * 100)}%</span>
                                   </div>
                                   <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
@@ -450,7 +449,7 @@ export default function DashboardPage() {
                               href={`/shopping-lists/${list._id}`}
                               className="flex-1 font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 group/link transition text-sm flex items-center gap-1"
                             >
-                              View Items
+                              {t('items_list')}
                               <span className="inline-block group-hover/link:translate-x-1 transition-transform duration-300">→</span>
                             </Link>
                             <div className="flex items-center gap-1">
@@ -463,7 +462,7 @@ export default function DashboardPage() {
                                   >
                                     <Eye className="w-4 h-4" />
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">Quantities</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">{t('quantity')}</span>
                                 </div>
                               )}
                               {permissions.canShare && user?.id && (
@@ -485,7 +484,7 @@ export default function DashboardPage() {
                                   >
                                     <Copy className="w-4 h-4" />
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">Duplicate</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">{t('duplicateThisList')}</span>
                                 </div>
                               )}
                               {permissions.canDelete && (
@@ -502,7 +501,7 @@ export default function DashboardPage() {
                                       <Trash2 className="w-4 h-4" />
                                     )}
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">Delete</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">{t('deleteThisListPermanently')}</span>
                                 </div>
                               )}
                             </div>
@@ -519,7 +518,7 @@ export default function DashboardPage() {
                 <div className="animate-in-up" style={{ animationDelay: '0.2s' }}>
                   <div className="flex items-center gap-3 mb-6">
                     <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
-                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">Templates</h2>
+                    <h2 className="text-2xl font-bold bg-gradient-to-r from-amber-600 to-orange-600 dark:from-amber-400 dark:to-orange-400 bg-clip-text text-transparent">{t('useTemplates')}</h2>
                     <div className="h-1 flex-1 bg-gradient-to-r from-amber-400 to-transparent rounded-full"></div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -539,6 +538,9 @@ export default function DashboardPage() {
                             className="flex-1 p-6 group block hover:bg-white/30 dark:hover:bg-amber-900/20 transition-colors duration-300"
                           >
                             <div className="space-y-4">
+                              <div>
+                                <h3 className="text-lg font-bold text-amber-900 dark:text-amber-100 mb-2 truncate">{list.name ?? 'Untitled template'}</h3>
+                              </div>
                               <div className="flex flex-wrap items-center gap-2">
                                 {list.items && list.items.length > 0 && (
                                   <span className="text-sm font-semibold text-amber-700 dark:text-amber-300 bg-amber-100/50 dark:bg-amber-900/30 px-3 py-1.5 rounded-full">
@@ -569,7 +571,7 @@ export default function DashboardPage() {
                               href={`/shopping-lists/${list._id}`}
                               className="flex-1 font-semibold text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 group/link transition text-sm flex items-center gap-1"
                             >
-                              View Items
+                              Artikelen
                               <span className="inline-block group-hover/link:translate-x-1 transition-transform duration-300">→</span>
                             </Link>
                             <div className="flex items-center gap-1">
@@ -582,7 +584,7 @@ export default function DashboardPage() {
                                   >
                                     <Eye className="w-4 h-4" />
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">Quantities</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/peek:opacity-100 transition-opacity shadow-lg z-50">{t('quantity')}</span>
                                 </div>
                               )}
                               {permissions.canShare && user?.id && (
@@ -604,7 +606,7 @@ export default function DashboardPage() {
                                   >
                                     <Copy className="w-4 h-4" />
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">Duplicate</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/dup:opacity-100 transition-opacity shadow-lg z-50">{t('duplicateThisList')}</span>
                                 </div>
                               )}
                               {permissions.canDelete && (
@@ -621,7 +623,7 @@ export default function DashboardPage() {
                                       <Trash2 className="w-4 h-4" />
                                     )}
                                   </button>
-                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">Delete</span>
+                                  <span className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg bg-gray-900 dark:bg-gray-800 px-2.5 py-1.5 text-xs text-white opacity-0 group-hover/del:opacity-100 transition-opacity shadow-lg z-50">{t('deleteThisListPermanently')}</span>
                                 </div>
                               )}
                             </div>

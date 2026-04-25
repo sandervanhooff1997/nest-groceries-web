@@ -2,6 +2,7 @@
 
 import { Loader2, X } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslations } from '@/src/lib/use-translations';
 
 interface Template {
   _id: string;
@@ -18,6 +19,7 @@ interface Props {
 
 
 export function CreateListModal({ templates, isCreating, onConfirm, onClose }: Props) {
+  const { t } = useTranslations();
   const [isTemplate, setIsTemplate] = useState(false);
   const [fromTemplateIds, setFromTemplateIds] = useState<string[]>([]);
   const [templateName, setTemplateName] = useState('');
@@ -26,7 +28,7 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (isTemplate && !templateName.trim()) {
-      setNameError('Template name is required');
+      setNameError(t('listName'));
       return;
     }
     setNameError('');
@@ -44,7 +46,7 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
     >
       <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl w-full max-w-2xl mx-4 border border-gray-200/50 dark:border-gray-700/50">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200/50 dark:border-gray-700/50 bg-gradient-to-r from-white/80 to-blue-50/50 dark:from-gray-800/80 dark:to-blue-900/20">
-          <h2 className="text-lg font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">Create New List</h2>
+          <h2 className="text-lg font-bold bg-gradient-to-r from-gray-800 to-gray-600 dark:from-gray-100 dark:to-gray-400 bg-clip-text text-transparent">{t('createNewList')}</h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -58,7 +60,7 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
           {templates.length > 0 && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-4">
-                Start from templates <span className="text-gray-500 font-normal">(optional)</span>
+                {t('useTemplates')} <span className="text-gray-500 font-normal">(optional)</span>
               </label>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {templates.map((t) => {
@@ -139,13 +141,13 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
                   }`}
                 />
               </button>
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Save as template</span>
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">{t('saveAsTemplate')}</span>
             </label>
 
             {isTemplate && (
               <div className="p-4 rounded-lg bg-blue-50/50 dark:bg-blue-900/20 border border-blue-200/50 dark:border-blue-800/50">
                 <label htmlFor="template-name" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                  Template name <span className="text-red-500">*</span>
+                  {t('listName')} <span className="text-red-500">*</span>
                 </label>
                 <input
                   id="template-name"
@@ -171,7 +173,7 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
               disabled={isCreating}
               className="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+{t('cancel')}
             </button>
             <button
               type="submit"
@@ -179,7 +181,7 @@ export function CreateListModal({ templates, isCreating, onConfirm, onClose }: P
               className="px-5 py-2.5 text-sm font-medium bg-gradient-to-r from-blue-600 to-blue-500 dark:from-blue-500 dark:to-blue-600 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/50 dark:hover:shadow-blue-400/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             >
               {isCreating && <Loader2 className="w-4 h-4 animate-spin" />}
-              Create List
+{t('create')}
             </button>
           </div>
         </form>
