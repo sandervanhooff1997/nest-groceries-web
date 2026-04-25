@@ -36,15 +36,15 @@
   ],
   "screenshots": [
     {
-      "src": "/screenshots/screenshot-narrow.svg",
+      "src": "/screenshots/screenshot-narrow.png",
       "sizes": "540x720",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "narrow"
     },
     {
-      "src": "/screenshots/screenshot-wide.svg",
+      "src": "/screenshots/screenshot-wide.png",
       "sizes": "1280x720",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "form_factor": "wide"
     }
   ],
@@ -58,7 +58,7 @@
       "icons": [
         {
           "src": "/icons/shortcut-new-list.png",
-          "sizes": "96x96",
+          "sizes": "144x144",
           "type": "image/png"
         }
       ]
