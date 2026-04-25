@@ -1,0 +1,57 @@
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3f4f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e5e7eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="720" fill="url(#bgGrad)"/>
+
+  <!-- Header -->
+  <rect width="1280" height="70" fill="#667eea"/>
+  <text x="640" y="45" text-anchor="middle" font-size="32" font-weight="bold" fill="white">Smart Grocery Lists</text>
+
+  <!-- Left sidebar -->
+  <rect width="300" height="650" y="70" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="20" y="110" font-size="16" font-weight="bold" fill="#333">Lists</text>
+
+  <rect x="20" y="130" width="260" height="50" fill="#f0f4ff" rx="8" stroke="#667eea" stroke-width="1"/>
+  <text x="40" y="165" font-size="14" fill="#333">Weekly Groceries</text>
+
+  <rect x="20" y="195" width="260" height="50" fill="white" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="40" y="230" font-size="14" fill="#666">Pantry Staples</text>
+
+  <rect x="20" y="260" width="260" height="50" fill="white" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+  <text x="40" y="295" font-size="14" fill="#666">Bakery Essentials</text>
+
+  <!-- Main content area -->
+  <g id="mainContent">
+    <text x="340" y="120" font-size="24" font-weight="bold" fill="#333">Weekly Groceries</text>
+
+    <!-- List items -->
+    <g id="item1">
+      <rect x="340" y="145" width="900" height="60" fill="white" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+      <rect x="360" y="168" width="24" height="24" fill="#667eea" rx="4"/>
+      <text x="400" y="185" font-size="16" fill="#333">Bananas</text>
+      <text x="850" y="185" font-size="14" fill="#999">2 bunch</text>
+    </g>
+
+    <g id="item2">
+      <rect x="340" y="220" width="900" height="60" fill="white" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+      <rect x="360" y="243" width="24" height="24" fill="#ccc" rx="4" stroke="#999" stroke-width="2"/>
+      <text x="400" y="260" font-size="16" fill="#999" text-decoration="line-through">Milk</text>
+      <text x="850" y="260" font-size="14" fill="#999">1 L</text>
+    </g>
+
+    <g id="item3">
+      <rect x="340" y="295" width="900" height="60" fill="white" rx="8" stroke="#e5e7eb" stroke-width="1"/>
+      <rect x="360" y="318" width="24" height="24" fill="#667eea" rx="4"/>
+      <text x="400" y="335" font-size="16" fill="#333">Tomatoes</text>
+      <text x="850" y="335" font-size="14" fill="#999">6 pieces</text>
+    </g>
+  </g>
+
+  <!-- Action buttons at bottom right -->
+  <circle cx="1200" cy="640" r="35" fill="#667eea" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.1))"/>
+  <text x="1200" y="652" text-anchor="middle" font-size="24" fill="white">+</text>
+</svg>

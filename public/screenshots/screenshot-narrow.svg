@@ -1,0 +1,39 @@
+<svg viewBox="0 0 540 720" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f3f4f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e5e7eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="540" height="720" fill="url(#bgGrad)"/>
+
+  <!-- Status bar -->
+  <rect width="540" height="44" fill="#ffffff"/>
+  <text x="270" y="28" text-anchor="middle" font-size="14" fill="#333">9:41</text>
+
+  <!-- Header -->
+  <rect y="44" width="540" height="60" fill="#667eea"/>
+  <text x="270" y="84" text-anchor="middle" font-size="24" font-weight="bold" fill="white">My Shopping Lists</text>
+
+  <!-- Shopping list cards -->
+  <g id="card1">
+    <rect x="20" y="120" width="500" height="140" fill="white" rx="12" stroke="#e5e7eb" stroke-width="1"/>
+    <text x="40" y="155" font-size="18" font-weight="bold" fill="#333">Weekly Groceries</text>
+    <text x="40" y="180" font-size="14" fill="#666">12 items • 8 purchased</text>
+    <rect x="40" y="190" width="100" height="40" fill="#667eea" rx="6"/>
+    <text x="90" y="217" text-anchor="middle" font-size="12" fill="white" font-weight="bold">View List</text>
+  </g>
+
+  <!-- Another card -->
+  <g id="card2">
+    <rect x="20" y="280" width="500" height="140" fill="white" rx="12" stroke="#e5e7eb" stroke-width="1"/>
+    <text x="40" y="315" font-size="18" font-weight="bold" fill="#333">Pantry Staples</text>
+    <text x="40" y="340" font-size="14" fill="#666">5 items • 2 purchased</text>
+    <rect x="40" y="350" width="100" height="40" fill="#667eea" rx="6"/>
+    <text x="90" y="377" text-anchor="middle" font-size="12" fill="white" font-weight="bold">View List</text>
+  </g>
+
+  <!-- Floating action button -->
+  <circle cx="480" cy="640" r="40" fill="#667eea" filter="drop-shadow(0 4px 8px rgba(0,0,0,0.1))"/>
+  <text x="480" y="650" text-anchor="middle" font-size="28" fill="white">+</text>
+</svg>
