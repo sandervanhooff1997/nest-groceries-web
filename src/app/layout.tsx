@@ -29,11 +29,12 @@ export default function RootLayout({
         <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#1f2937" media="(prefers-color-scheme: dark)" />
         <meta name="description" content="Smart grocery list management with templates" />
+        <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Groceries" />
+        <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <link rel="icon" type="image/png" href="/icons/icon-192x192.png" />
         <link rel="manifest" href="/manifest.json" />
       </head>
       <body className="bg-gray-50">
